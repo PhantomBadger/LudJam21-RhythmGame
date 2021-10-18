@@ -9,6 +9,7 @@
 /LudJam21-RhythmGame/[Bb]uilds/
 /LudJam21-RhythmGame/[Ll]ogs/
 /LudJam21-RhythmGame/[Mm]emoryCaptures/
+/[Ee]xternal/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/LudJam21-RhythmGame/[Aa]ssets/**/*.meta
