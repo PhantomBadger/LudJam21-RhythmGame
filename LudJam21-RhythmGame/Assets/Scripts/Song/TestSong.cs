@@ -47,7 +47,33 @@ public class TestSong : MonoBehaviour
         SongAudioSource.clip = audioClip;
         SongAudioSource.Pause();
 
-        SongNoteGenerator songNoteGenerator = new SongNoteGenerator(NoteObjectFactory, 0, -3f, -1f, 1f, 3f, DistanceInSecond);
+        NoteChannelInfo leftChannelInfo = new NoteChannelInfo()
+        {
+            GoalPos = new Vector3(-3f, 0),
+            Direction = new Vector3(0, -1f)
+        };
+        NoteChannelInfo downChannelInfo = new NoteChannelInfo()
+        {
+            GoalPos = new Vector3(-1f, 0),
+            Direction = new Vector3(0, -1f)
+        };
+        NoteChannelInfo upChannelInfo = new NoteChannelInfo()
+        {
+            GoalPos = new Vector3(1f, 0),
+            Direction = new Vector3(0, -1f)
+        };
+        NoteChannelInfo rightChannelInfo = new NoteChannelInfo()
+        {
+            GoalPos = new Vector3(3f, 0),
+            Direction = new Vector3(0, -1f)
+        };
+        SongNoteGenerator songNoteGenerator = new SongNoteGenerator(
+            NoteObjectFactory, 
+            leftChannelInfo, 
+            downChannelInfo,
+            upChannelInfo,
+            rightChannelInfo,
+            DistanceInSecond);
         List<NoteRow> noteRows = songNoteGenerator.GenerateNotes(songMetaData);
 
         yield return StartCoroutine(DoNoteMovementTest(noteRows));
@@ -63,6 +89,7 @@ public class TestSong : MonoBehaviour
             {
                 if (noteRows[i].LeftNoteObject != null)
                 {
+                    Debug.Log($"Moving Note down by {(new Vector3(0, DistanceInSecond * Time.deltaTime)).magnitude}");
                     noteRows[i].LeftNoteObject.transform.position -= new Vector3(0, DistanceInSecond * Time.deltaTime);
                 }
 

@@ -15,11 +15,10 @@ namespace Assets.Scripts.Song
     public class SongNoteGenerator
     {
         private readonly INoteGameObjectFactory noteFactory;
-        private readonly float originYPos;
-        private readonly float leftChannelXPos;
-        private readonly float upChannelXPos;
-        private readonly float rightChannelXPos;
-        private readonly float downChannelXPos;
+        private readonly NoteChannelInfo leftChannelInfo;
+        private readonly NoteChannelInfo upChannelInfo;
+        private readonly NoteChannelInfo rightChannelInfo;
+        private readonly NoteChannelInfo downChannelInfo;
         private readonly float fallDistancePerSecond;
 
         /// <summary>
@@ -34,19 +33,17 @@ namespace Assets.Scripts.Song
         /// <param name="fallDistancePerSecond">The distance a note will fall in a second</param>
         public SongNoteGenerator(
             INoteGameObjectFactory noteFactory, 
-            float originYPos, 
-            float leftChannelXPos, 
-            float downChannelXPos,
-            float upChannelXPos, 
-            float rightChannelXPos,
+            NoteChannelInfo leftChannelInfo,
+            NoteChannelInfo downChannelInfo,
+            NoteChannelInfo upChannelInfo,
+            NoteChannelInfo rightChannelInfo,
             float fallDistancePerSecond)
         {
             this.noteFactory = noteFactory ?? throw new ArgumentNullException(nameof(noteFactory));
-            this.originYPos = originYPos;
-            this.leftChannelXPos = leftChannelXPos;
-            this.downChannelXPos = downChannelXPos;
-            this.upChannelXPos = upChannelXPos;
-            this.rightChannelXPos = rightChannelXPos;
+            this.leftChannelInfo = leftChannelInfo;
+            this.downChannelInfo = downChannelInfo;
+            this.upChannelInfo = upChannelInfo;
+            this.rightChannelInfo = rightChannelInfo;
             this.fallDistancePerSecond = Math.Abs(fallDistancePerSecond);
         }
 
@@ -76,22 +73,22 @@ namespace Assets.Scripts.Song
                     NoteRowInfo = noteRowInfo
                 };
 
-                Vector3 newNotePosition = new Vector3();
-                newNotePosition.y = distanceCounter;
-
                 // Get the appropriate GameObject for each note
-                newNotePosition.x = leftChannelXPos;
+                Vector3 leftNotePosition = leftChannelInfo.GoalPos + ((-leftChannelInfo.Direction) * distanceCounter);
+                noteRow.LeftNoteObject = noteFactory.GetNote(leftNotePosition, noteRowInfo.LeftNoteInfo);
+                noteRow.LeftNoteStartPos = leftNotePosition;
 
-                noteRow.LeftNoteObject = noteFactory.GetNote(newNotePosition, noteRowInfo.LeftNoteInfo);
+                Vector3 downNotePosition = downChannelInfo.GoalPos + ((-downChannelInfo.Direction) * distanceCounter);
+                noteRow.DownNoteObject = noteFactory.GetNote(downNotePosition, noteRowInfo.DownNoteInfo);
+                noteRow.DownNoteStartPos = downNotePosition;
 
-                newNotePosition.x = downChannelXPos;
-                noteRow.DownNoteObject = noteFactory.GetNote(newNotePosition, noteRowInfo.DownNoteInfo);
+                Vector3 upNotePosition = upChannelInfo.GoalPos + ((-upChannelInfo.Direction) * distanceCounter);
+                noteRow.UpNoteObject = noteFactory.GetNote(upNotePosition, noteRowInfo.UpNoteInfo);
+                noteRow.UpNoteStartPos = upNotePosition;
 
-                newNotePosition.x = upChannelXPos;
-                noteRow.UpNoteObject = noteFactory.GetNote(newNotePosition, noteRowInfo.UpNoteInfo);
-
-                newNotePosition.x = rightChannelXPos;
-                noteRow.RightNoteObject = noteFactory.GetNote(newNotePosition, noteRowInfo.RightNoteInfo);
+                Vector3 rightNotePosition = rightChannelInfo.GoalPos + ((-rightChannelInfo.Direction) * distanceCounter);
+                noteRow.RightNoteObject = noteFactory.GetNote(rightNotePosition, noteRowInfo.RightNoteInfo);
+                noteRow.RightNoteStartPos = rightNotePosition;
 
                 // Add it to our row list
                 noteRows.Add(noteRow);
