@@ -72,18 +72,27 @@ namespace Assets.Scripts
                         if (dist > HitThreshold)
                         {
                             // If it is still hittable
-                            if ((noteRow.LeftNoteObject != null && !noteRow.LeftNoteHasBeenHitProcessed) ||
-                                (noteRow.DownNoteObject != null && !noteRow.DownNoteHasBeenHitProcessed) ||
-                                (noteRow.UpNoteObject != null && !noteRow.UpNoteHasBeenHitProcessed) ||
-                                (noteRow.RightNoteObject != null) && !noteRow.RightNoteHasBeenHitProcessed)
+                            // We have missed the note 100%!
+                            // Set the hit processed flags so we don't attempt to check it again
+                            if (noteRow.LeftNoteObject != null && !noteRow.LeftNoteHasBeenHitProcessed)
                             {
-                                // We have missed the note 100%!
-                                // Set the hit processed flags so we don't attempt to check it again
-                                InvokeNoteMissEvent(testNoteHitTest.NoteChannelInfo);
                                 noteRow.LeftNoteHasBeenHitProcessed = true;
+                                InvokeNoteMissEvent(SongPlayer.LeftChannelInfo);
+                            }
+                            if (noteRow.DownNoteObject != null && !noteRow.DownNoteHasBeenHitProcessed)
+                            {
                                 noteRow.DownNoteHasBeenHitProcessed = true;
-                                noteRow.RightNoteHasBeenHitProcessed = true;
+                                InvokeNoteMissEvent(SongPlayer.DownChannelInfo);
+                            }
+                            if (noteRow.UpNoteObject != null && !noteRow.UpNoteHasBeenHitProcessed)
+                            {
                                 noteRow.UpNoteHasBeenHitProcessed = true;
+                                InvokeNoteMissEvent(SongPlayer.UpChannelInfo);
+                            }
+                            if (noteRow.RightNoteObject != null && !noteRow.RightNoteHasBeenHitProcessed)
+                            {
+                                noteRow.RightNoteHasBeenHitProcessed = true;
+                                InvokeNoteMissEvent(SongPlayer.RightChannelInfo);
                             }
                         }
                     }
