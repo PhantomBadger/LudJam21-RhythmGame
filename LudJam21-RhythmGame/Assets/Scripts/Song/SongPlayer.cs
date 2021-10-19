@@ -13,6 +13,13 @@ namespace Assets.Scripts.Song
 {
     public class SongPlayer : MonoBehaviour
     {
+        public static SongMetadata SongMetadata;
+        public static NoteChannelInfo LeftChannelInfo;
+        public static NoteChannelInfo DownChannelInfo;
+        public static NoteChannelInfo UpChannelInfo;
+        public static NoteChannelInfo RightChannelInfo;
+        public static List<NoteRow> NoteRows;
+
         public string SongFilePath;
         public TestNoteObjectFactory NoteObjectFactory;
         public AudioSource TargetAudioSource;
@@ -30,12 +37,6 @@ namespace Assets.Scripts.Song
         public UnityEvent OnSongPaused;
         public UnityEvent OnSongPlay;
 
-        private NoteChannelInfo leftChannelInfo;
-        private NoteChannelInfo downChannelInfo;
-        private NoteChannelInfo upChannelInfo;
-        private NoteChannelInfo rightChannelInfo;
-        private SongMetadata songMetadata;
-        private List<NoteRow> noteRows;
         private bool isSongLoaded = false;
         private bool isPaused = true;
         private float totalSongDistance;
@@ -74,26 +75,10 @@ namespace Assets.Scripts.Song
             if (UpChannelTransform == null) { throw new ArgumentNullException(nameof(UpChannelTransform)); }
             if (RightChannelTransform == null) { throw new ArgumentNullException(nameof(RightChannelTransform)); }
 
-            leftChannelInfo = new NoteChannelInfo()
-            {
-                GoalPos = LeftChannelTransform.position,
-                Direction = LeftChannelTransform.forward.normalized
-            };
-            downChannelInfo = new NoteChannelInfo()
-            {
-                GoalPos = DownChannelTransform.position,
-                Direction = DownChannelTransform.forward.normalized
-            };
-            upChannelInfo = new NoteChannelInfo()
-            {
-                GoalPos = UpChannelTransform.position,
-                Direction = UpChannelTransform.forward.normalized
-            };
-            rightChannelInfo = new NoteChannelInfo()
-            {
-                GoalPos = RightChannelTransform.position,
-                Direction = RightChannelTransform.forward.normalized
-            };
+            LeftChannelInfo = new NoteChannelInfo(LeftChannelTransform);
+            DownChannelInfo = new NoteChannelInfo(DownChannelTransform);
+            UpChannelInfo = new NoteChannelInfo(UpChannelTransform);
+            RightChannelInfo = new NoteChannelInfo(RightChannelTransform);
 
             StartCoroutine(InitialiseSong());
         }
@@ -106,10 +91,10 @@ namespace Assets.Scripts.Song
         {
             // Parse the song and load it into the target
             SongParser songParser = new SongParser();
-            songMetadata = songParser.ParseSongFile(SongFilePath);
-            yield return StartCoroutine(LoadAudioClip(songMetadata));
+            SongMetadata = songParser.ParseSongFile(SongFilePath);
+            yield return StartCoroutine(LoadAudioClip(SongMetadata));
 
-            noteRows = GenerateSongNotes(songMetadata);
+            NoteRows = GenerateSongNotes(SongMetadata);
 
             totalSongDistance = TargetAudioSource.clip.length * DistanceInSecond;
 
@@ -144,10 +129,10 @@ namespace Assets.Scripts.Song
         {
             SongNoteGenerator songNoteGenerator = new SongNoteGenerator(
                 NoteObjectFactory,
-                leftChannelInfo,
-                downChannelInfo,
-                upChannelInfo,
-                rightChannelInfo,
+                LeftChannelInfo,
+                DownChannelInfo,
+                UpChannelInfo,
+                RightChannelInfo,
                 DistanceInSecond);
             return songNoteGenerator.GenerateNotes(songMetadata);
         }
@@ -169,26 +154,26 @@ namespace Assets.Scripts.Song
             float distanceOffset = totalSongDistance * percentageThroughSong;
 
             // Move each note towards the goal
-            for (int i = 0; i < noteRows.Count; i++)
+            for (int i = 0; i < NoteRows.Count; i++)
             {
-                if (noteRows[i].LeftNoteObject != null)
+                if (NoteRows[i].LeftNoteObject != null)
                 {
-                    noteRows[i].LeftNoteObject.transform.position = noteRows[i].LeftNoteStartPos + (leftChannelInfo.Direction * distanceOffset);
+                    NoteRows[i].LeftNoteObject.transform.position = NoteRows[i].LeftNoteStartPos + (LeftChannelInfo.Direction * distanceOffset);
                 }
 
-                if (noteRows[i].DownNoteObject != null)
+                if (NoteRows[i].DownNoteObject != null)
                 {
-                    noteRows[i].DownNoteObject.transform.position = noteRows[i].DownNoteStartPos + (downChannelInfo.Direction * distanceOffset);
+                    NoteRows[i].DownNoteObject.transform.position = NoteRows[i].DownNoteStartPos + (DownChannelInfo.Direction * distanceOffset);
                 }
 
-                if (noteRows[i].UpNoteObject != null)
+                if (NoteRows[i].UpNoteObject != null)
                 {
-                    noteRows[i].UpNoteObject.transform.position = noteRows[i].UpNoteStartPos + (upChannelInfo.Direction * distanceOffset);
+                    NoteRows[i].UpNoteObject.transform.position = NoteRows[i].UpNoteStartPos + (UpChannelInfo.Direction * distanceOffset);
                 }
 
-                if (noteRows[i].RightNoteObject != null)
+                if (NoteRows[i].RightNoteObject != null)
                 {
-                    noteRows[i].RightNoteObject.transform.position = noteRows[i].RightNoteStartPos + (rightChannelInfo.Direction * distanceOffset);
+                    NoteRows[i].RightNoteObject.transform.position = NoteRows[i].RightNoteStartPos + (RightChannelInfo.Direction * distanceOffset);
                 }
             }
         }

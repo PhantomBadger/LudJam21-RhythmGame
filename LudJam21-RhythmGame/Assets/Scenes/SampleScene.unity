@@ -135,7 +135,6 @@ GameObject:
   - component: {fileID: 226707251}
   - component: {fileID: 226707250}
   - component: {fileID: 226707249}
-  - component: {fileID: 226707253}
   m_Layer: 0
   m_Name: SongPlayer
   m_TagString: Untagged
@@ -156,7 +155,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 1
   m_Volume: 0.539
-  m_Pitch: 1
+  m_Pitch: 0.4
   Loop: 0
   Mute: 0
   Spatialize: 0
@@ -254,7 +253,7 @@ MonoBehaviour:
   SongFilePath: Assets/Resources/1_2.song
   NoteObjectFactory: {fileID: 226707251}
   TargetAudioSource: {fileID: 226707249}
-  DistanceInSecond: 8.4
+  DistanceInSecond: 10
   LeftChannelTransform: {fileID: 1911690854}
   DownChannelTransform: {fileID: 857964445}
   UpChannelTransform: {fileID: 1624984917}
@@ -276,10 +275,34 @@ MonoBehaviour:
         m_CallState: 2
   OnSongPaused:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1399101117}
+        m_TargetAssemblyTypeName: NoteHitDetector, Assembly-CSharp
+        m_MethodName: EnableHitDetection
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   OnSongPlay:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1399101117}
+        m_TargetAssemblyTypeName: NoteHitDetector, Assembly-CSharp
+        m_MethodName: EnableHitDetection
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
 --- !u!114 &226707251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -315,22 +338,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &226707253
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 226707248}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d0073008d276eb48882bb8d5f34d2f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  SongFilePath: Assets/Resources/1_2.song
-  NoteObjectFactory: {fileID: 226707251}
-  SongAudioSource: {fileID: 226707249}
-  DistanceInSecond: 10
 --- !u!1 &449181179
 GameObject:
   m_ObjectHideFlags: 0
@@ -484,6 +491,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1399101116}
   - component: {fileID: 1399101115}
+  - component: {fileID: 1399101117}
+  - component: {fileID: 1399101118}
   m_Layer: 0
   m_Name: Line
   m_TagString: Untagged
@@ -556,6 +565,91 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1399101117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1399101114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24c13ccecbfaf1a41ae956f231e1686a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HitThreshold: 1
+  LeftChannelKey: 49
+  DownChannelKey: 50
+  UpChannelKey: 51
+  RightChannelKey: 52
+  OnNoteHit:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1399101117}
+        m_TargetAssemblyTypeName: Assets.Scripts.NoteHitDetector, Assembly-CSharp
+        m_MethodName: OutputHitMessage
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1399101118}
+        m_TargetAssemblyTypeName: Assets.Scripts.HitResponseSpawner, Assembly-CSharp
+        m_MethodName: SpawnHitResponse
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  OnNoteMiss:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1399101117}
+        m_TargetAssemblyTypeName: Assets.Scripts.NoteHitDetector, Assembly-CSharp
+        m_MethodName: OutputMissMessage
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1399101118}
+        m_TargetAssemblyTypeName: Assets.Scripts.HitResponseSpawner, Assembly-CSharp
+        m_MethodName: SpawnMissResponse
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1399101118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1399101114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: debae0ebc3cffa04ea6f8df9ce8041bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HitResponsePrefab: {fileID: 5001845024940823125, guid: f0de1d91af7732d46b9e5d106227e48e, type: 3}
+  MissResponsePrefab: {fileID: 978904443863853607, guid: a005d6fe5b8203741887d80bcef5e663, type: 3}
 --- !u!1 &1624984916
 GameObject:
   m_ObjectHideFlags: 0

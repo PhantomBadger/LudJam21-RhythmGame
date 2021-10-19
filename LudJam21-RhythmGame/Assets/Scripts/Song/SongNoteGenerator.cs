@@ -77,18 +77,22 @@ namespace Assets.Scripts.Song
                 Vector3 leftNotePosition = leftChannelInfo.GoalPos + ((-leftChannelInfo.Direction) * distanceCounter);
                 noteRow.LeftNoteObject = noteFactory.GetNote(leftNotePosition, noteRowInfo.LeftNoteInfo);
                 noteRow.LeftNoteStartPos = leftNotePosition;
+                noteRow.LeftNoteHasBeenHitProcessed = false;
 
                 Vector3 downNotePosition = downChannelInfo.GoalPos + ((-downChannelInfo.Direction) * distanceCounter);
                 noteRow.DownNoteObject = noteFactory.GetNote(downNotePosition, noteRowInfo.DownNoteInfo);
                 noteRow.DownNoteStartPos = downNotePosition;
+                noteRow.DownNoteHasBeenHitProcessed = false;
 
                 Vector3 upNotePosition = upChannelInfo.GoalPos + ((-upChannelInfo.Direction) * distanceCounter);
                 noteRow.UpNoteObject = noteFactory.GetNote(upNotePosition, noteRowInfo.UpNoteInfo);
                 noteRow.UpNoteStartPos = upNotePosition;
+                noteRow.UpNoteHasBeenHitProcessed = false;
 
                 Vector3 rightNotePosition = rightChannelInfo.GoalPos + ((-rightChannelInfo.Direction) * distanceCounter);
                 noteRow.RightNoteObject = noteFactory.GetNote(rightNotePosition, noteRowInfo.RightNoteInfo);
                 noteRow.RightNoteStartPos = rightNotePosition;
+                noteRow.RightNoteHasBeenHitProcessed = false;
 
                 // Add it to our row list
                 noteRows.Add(noteRow);

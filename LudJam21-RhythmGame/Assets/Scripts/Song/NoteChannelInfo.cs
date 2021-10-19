@@ -12,5 +12,16 @@ namespace Assets.Scripts.Song
     {
         public Vector3 GoalPos { get; set; }
         public Vector3 Direction { get; set; }
+
+        public NoteChannelInfo()
+        {
+
+        }
+
+        public NoteChannelInfo(Transform transform)
+        {
+            GoalPos = transform.position;
+            Direction = transform.forward.normalized;
+        }
     }
 }
