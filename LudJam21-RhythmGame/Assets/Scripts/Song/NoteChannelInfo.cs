@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts.Song.FileData;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,7 @@ namespace Assets.Scripts.Song
     [Serializable]
     public class NoteChannelInfo
     {
+        public NoteChannel NoteChannel { get; set; }
         public Vector3 GoalPos { get; set; }
         public Vector3 Direction { get; set; }
 
@@ -18,8 +20,9 @@ namespace Assets.Scripts.Song
 
         }
 
-        public NoteChannelInfo(Transform transform)
+        public NoteChannelInfo(Transform transform, NoteChannel noteChannel)
         {
+            NoteChannel = noteChannel;
             GoalPos = transform.position;
             Direction = transform.forward.normalized;
         }

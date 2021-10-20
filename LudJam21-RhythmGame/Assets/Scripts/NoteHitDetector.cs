@@ -4,8 +4,10 @@ using Assets.Scripts.Song.FileData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
+using static Assets.Scripts.NoteMissEventArgs;
 
 namespace Assets.Scripts
 {
@@ -37,6 +39,8 @@ namespace Assets.Scripts
         private float missCooldownCounter;
         private bool isMissCooldownActive;
 
+        private List<NoteRow> initialNotesToReset;
+
         /// <summary>
         /// Called on Start
         /// </summary>
@@ -47,6 +51,7 @@ namespace Assets.Scripts
             isDetectionActive = false;
             missCooldownCounter = 0;
             isMissCooldownActive = false;
+            initialNotesToReset = new List<NoteRow>();
         }
 
         /// <summary>
@@ -89,22 +94,22 @@ namespace Assets.Scripts
                             if (noteRow.LeftNoteObject != null && !noteRow.LeftNoteHasBeenHitProcessed)
                             {
                                 noteRow.LeftNoteHasBeenHitProcessed = true;
-                                InvokeNoteMissEvent(SongPlayer.LeftChannelInfo);
+                                InvokeNoteMissEvent(TypeOfMissedNote.NoAttemptedNote, SongPlayer.LeftChannelInfo);
                             }
                             if (noteRow.DownNoteObject != null && !noteRow.DownNoteHasBeenHitProcessed)
                             {
                                 noteRow.DownNoteHasBeenHitProcessed = true;
-                                InvokeNoteMissEvent(SongPlayer.DownChannelInfo);
+                                InvokeNoteMissEvent(TypeOfMissedNote.NoAttemptedNote, SongPlayer.DownChannelInfo);
                             }
                             if (noteRow.UpNoteObject != null && !noteRow.UpNoteHasBeenHitProcessed)
                             {
                                 noteRow.UpNoteHasBeenHitProcessed = true;
-                                InvokeNoteMissEvent(SongPlayer.UpChannelInfo);
+                                InvokeNoteMissEvent(TypeOfMissedNote.NoAttemptedNote, SongPlayer.UpChannelInfo);
                             }
                             if (noteRow.RightNoteObject != null && !noteRow.RightNoteHasBeenHitProcessed)
                             {
                                 noteRow.RightNoteHasBeenHitProcessed = true;
-                                InvokeNoteMissEvent(SongPlayer.RightChannelInfo);
+                                InvokeNoteMissEvent(TypeOfMissedNote.NoAttemptedNote, SongPlayer.RightChannelInfo);
                             }
                         }
                     }
@@ -146,19 +151,19 @@ namespace Assets.Scripts
                 // Check the remaining flags
                 if (leftHitInputToBeProcessed)
                 {
-                    InvokeNoteMissEvent(SongPlayer.LeftChannelInfo);
+                    InvokeNoteMissEvent(TypeOfMissedNote.IncorrectlyAttemptedNote, SongPlayer.LeftChannelInfo);
                 }
                 else if (downHitInputToBeProcessed)
                 {
-                    InvokeNoteMissEvent(SongPlayer.DownChannelInfo);
+                    InvokeNoteMissEvent(TypeOfMissedNote.IncorrectlyAttemptedNote, SongPlayer.DownChannelInfo);
                 }
                 else if (upHitInputToBeProcessed)
                 {
-                    InvokeNoteMissEvent(SongPlayer.UpChannelInfo);
+                    InvokeNoteMissEvent(TypeOfMissedNote.IncorrectlyAttemptedNote, SongPlayer.UpChannelInfo);
                 }
                 else if (rightHitInputToBeProcessed)
                 {
-                    InvokeNoteMissEvent(SongPlayer.RightChannelInfo);
+                    InvokeNoteMissEvent(TypeOfMissedNote.IncorrectlyAttemptedNote, SongPlayer.RightChannelInfo);
                 }
             }
 
@@ -173,6 +178,9 @@ namespace Assets.Scripts
             }
         }
 
+        /// <summary>
+        /// Gets info about the note to perform the distance check on from the given row
+        /// </summary>
         private CandidateNoteHitTest GetNoteTestInfo(NoteRow noteRow)
         {
             if (noteRow == null)
@@ -219,11 +227,15 @@ namespace Assets.Scripts
             return null;
         }
 
-        private void InvokeNoteMissEvent(NoteChannelInfo attemptedChannel)
+        /// <summary>
+        /// Invokes the Miss Event
+        /// </summary>
+        private void InvokeNoteMissEvent(TypeOfMissedNote typeOfMissedNote, NoteChannelInfo attemptedChannel)
         {
-            Debug.Break();
+            // Debug.Break();
             NoteMissEventArgs args = new NoteMissEventArgs()
             {
+                MissType = typeOfMissedNote,
                 AttemptedChannel = attemptedChannel,
             };
 
@@ -238,6 +250,9 @@ namespace Assets.Scripts
             OnNoteMiss.Invoke(args);
         }
 
+        /// <summary>
+        /// Invoke the Hit Event
+        /// </summary>
         private void InvokeNoteHitEvent(GameObject noteObject, NoteChannelInfo attemptedChannel)
         {
             NoteBlockBase blockBase = noteObject.GetComponent<NoteBlockBase>();
@@ -257,19 +272,144 @@ namespace Assets.Scripts
             }
         }
 
+        /// <summary>
+        /// Enable or Disable the Hit Detection
+        /// </summary>
+        /// <param name="enabled"></param>
         public void EnableHitDetection(bool enabled)
         {
             isDetectionActive = enabled;
         }
 
-        public void OutputHitMessage(NoteHitEventArgs args)
+        /// <summary>
+        /// Gets the last note to pass the 'goal' in the specified channel
+        /// </summary>
+        public NoteBlockBase GetLastCompletedNote(NoteChannelInfo channelToCheck, List<GameObject> notesToIgnore, float minNoteDist)
         {
-            Debug.Log("HIT!");
+            NoteBlockBase closestNote = null;
+            float curSmallestDist = float.MaxValue;
+
+            for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
+            {
+                NoteRow noteRow = SongPlayer.NoteRows[i];
+
+                // Identify the note object to check
+                GameObject noteToCheck = null;
+                switch (channelToCheck.NoteChannel)
+                {
+                    case NoteChannel.Left:
+                        noteToCheck = noteRow.LeftNoteObject;
+                        break;
+                    case NoteChannel.Down:
+                        noteToCheck = noteRow.DownNoteObject;
+                        break;
+                    case NoteChannel.Up:
+                        noteToCheck = noteRow.UpNoteObject;
+                        break;
+                    case NoteChannel.Right:
+                        noteToCheck = noteRow.RightNoteObject;
+                        break;
+                }
+
+                // If the note isnt here then that row has nothing in that spot ignore it
+                if (noteToCheck == null)
+                {
+                    continue;
+                }
+
+                // Skip it if it's a note we want to ignore
+                if (notesToIgnore != null && notesToIgnore.Contains(noteToCheck))
+                {
+                    continue;
+                }
+
+                Vector3 distToGoal = channelToCheck.GoalPos - noteToCheck.transform.position;
+                float dot = Vector3.Dot(distToGoal, channelToCheck.Direction);
+                float dist = Vector3.Distance(channelToCheck.GoalPos, noteToCheck.transform.position);
+
+                // If the dot product is negative then the Note is past the goal, ie, we care about it!
+                if (dot < 0)
+                {
+                    if (dist < curSmallestDist)
+                    {
+                        if (dist < minNoteDist)
+                        {
+                            continue;
+                        }
+                        curSmallestDist = dist;
+                        closestNote = noteToCheck.GetComponent<NoteBlockBase>();
+                    }
+                }
+            }
+
+            return closestNote;
         }
 
-        public void OutputMissMessage(NoteMissEventArgs args)
+        public void StartCollectNotesToReset()
         {
-            Debug.Log("MISS!");
+            initialNotesToReset = new List<NoteRow>();
+
+            // Get all Note Rows below the goal pos
+            for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
+            {
+                NoteRow noteRow = SongPlayer.NoteRows[i];
+                CandidateNoteHitTest noteHit = GetNoteTestInfo(noteRow);
+                if (noteHit == null || noteHit.NoteChannelInfo == null || noteHit.NoteObject == null)
+                {
+                    continue;
+                }
+
+                Vector3 distToGoal = noteHit.NoteChannelInfo.GoalPos - noteHit.NoteObject.transform.position;
+                float dot = Vector3.Dot(distToGoal, noteHit.NoteChannelInfo.Direction);
+
+                if (dot < 0)
+                {
+                    initialNotesToReset.Add(noteRow);
+                }
+            }
+        }
+
+        public void EndCollectNotesToReset(List<NoteBlockBase> notesToIgnore)
+        {
+            List<NoteRow> finalNotesBelowGoal = new List<NoteRow>();
+            List<GameObject> noteObjectsToIgnore = new List<GameObject>(notesToIgnore.Select((NoteBlockBase nbb) => nbb.gameObject));
+
+            // Get all Note Rows below the goal pos
+            for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
+            {
+                NoteRow noteRow = SongPlayer.NoteRows[i];
+                CandidateNoteHitTest noteHit = GetNoteTestInfo(noteRow);
+                if (noteHit == null || noteHit.NoteChannelInfo == null || noteHit.NoteObject == null)
+                {
+                    continue;
+                }
+
+                Vector3 distToGoal = noteHit.NoteChannelInfo.GoalPos - noteHit.NoteObject.transform.position;
+                float dot = Vector3.Dot(distToGoal, noteHit.NoteChannelInfo.Direction);
+
+                if (dot < 0)
+                {
+                    finalNotesBelowGoal.Add(noteRow);
+                }
+            }
+
+            // Remove any notes in the initial list that are in this list (ie, it's still below the goal when we finish rewinding)
+            List<NoteRow> noteRowsToReset = new List<NoteRow>(initialNotesToReset.Except(finalNotesBelowGoal));
+            for (int i = 0; i < noteRowsToReset.Count; i++)
+            {
+                if (noteObjectsToIgnore.Contains(noteRowsToReset[i].LeftNoteObject) ||
+                    noteObjectsToIgnore.Contains(noteRowsToReset[i].DownNoteObject) ||
+                    noteObjectsToIgnore.Contains(noteRowsToReset[i].UpNoteObject) ||
+                    noteObjectsToIgnore.Contains(noteRowsToReset[i].RightNoteObject))
+                {
+                    continue;
+                }
+
+                noteRowsToReset[i].LeftNoteHasBeenHitProcessed = false;
+                noteRowsToReset[i].DownNoteHasBeenHitProcessed = false;
+                noteRowsToReset[i].UpNoteHasBeenHitProcessed = false;
+                noteRowsToReset[i].RightNoteHasBeenHitProcessed = false;
+            }
         }
     }
 }

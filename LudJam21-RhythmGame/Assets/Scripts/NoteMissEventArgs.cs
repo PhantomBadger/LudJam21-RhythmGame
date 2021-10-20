@@ -9,6 +9,12 @@ namespace Assets.Scripts
 {
     public class NoteMissEventArgs
     {
+        public enum TypeOfMissedNote
+        {
+            NoAttemptedNote,
+            IncorrectlyAttemptedNote,
+        }
+        public TypeOfMissedNote MissType { get; set; }
         public NoteChannelInfo AttemptedChannel { get; set; }
     }
 }

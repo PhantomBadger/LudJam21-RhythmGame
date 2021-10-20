@@ -49,21 +49,25 @@ public class TestSong : MonoBehaviour
 
         NoteChannelInfo leftChannelInfo = new NoteChannelInfo()
         {
+            NoteChannel = NoteChannel.Left,
             GoalPos = new Vector3(-3f, 0),
             Direction = new Vector3(0, -1f)
         };
         NoteChannelInfo downChannelInfo = new NoteChannelInfo()
         {
+            NoteChannel = NoteChannel.Down,
             GoalPos = new Vector3(-1f, 0),
             Direction = new Vector3(0, -1f)
         };
         NoteChannelInfo upChannelInfo = new NoteChannelInfo()
         {
+            NoteChannel = NoteChannel.Up,
             GoalPos = new Vector3(1f, 0),
             Direction = new Vector3(0, -1f)
         };
         NoteChannelInfo rightChannelInfo = new NoteChannelInfo()
         {
+            NoteChannel = NoteChannel.Right,
             GoalPos = new Vector3(3f, 0),
             Direction = new Vector3(0, -1f)
         };

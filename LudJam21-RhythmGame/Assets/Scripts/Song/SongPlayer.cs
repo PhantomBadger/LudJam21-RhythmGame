@@ -39,6 +39,7 @@ namespace Assets.Scripts.Song
 
         private bool isSongLoaded = false;
         private bool isPaused = true;
+        private bool isRewinding = false;
         private float totalSongDistance;
 
         public bool IsSongLoaded
@@ -75,10 +76,10 @@ namespace Assets.Scripts.Song
             if (UpChannelTransform == null) { throw new ArgumentNullException(nameof(UpChannelTransform)); }
             if (RightChannelTransform == null) { throw new ArgumentNullException(nameof(RightChannelTransform)); }
 
-            LeftChannelInfo = new NoteChannelInfo(LeftChannelTransform);
-            DownChannelInfo = new NoteChannelInfo(DownChannelTransform);
-            UpChannelInfo = new NoteChannelInfo(UpChannelTransform);
-            RightChannelInfo = new NoteChannelInfo(RightChannelTransform);
+            LeftChannelInfo = new NoteChannelInfo(LeftChannelTransform, NoteChannel.Left);
+            DownChannelInfo = new NoteChannelInfo(DownChannelTransform, NoteChannel.Down);
+            UpChannelInfo = new NoteChannelInfo(UpChannelTransform, NoteChannel.Up);
+            RightChannelInfo = new NoteChannelInfo(RightChannelTransform, NoteChannel.Right);
 
             StartCoroutine(InitialiseSong());
         }
@@ -179,12 +180,25 @@ namespace Assets.Scripts.Song
         }
 
         /// <summary>
-        /// Starts playing the song
+        /// Starts playing the song - this resets the song also!
         /// </summary>
         public void PlaySong()
         {
             isPaused = false;
+            isRewinding = false;
             TargetAudioSource.Play();
+            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch);
+            RepositionNoteRows();
+            OnSongPlay.Invoke();
+        }
+
+        /// <summary>
+        /// Resumes playing the song
+        /// </summary>
+        public void UnpauseSong()
+        {
+            isPaused = false;
+            TargetAudioSource.UnPause();
             RepositionNoteRows();
             OnSongPlay.Invoke();
         }
@@ -197,6 +211,18 @@ namespace Assets.Scripts.Song
             isPaused = true;
             TargetAudioSource.Pause();
             OnSongPaused.Invoke();
+        }
+
+        public void ForwardSong()
+        {
+            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch);
+            isRewinding = false;
+        }
+
+        public void RewindSong()
+        {
+            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch) * -1;
+            isRewinding = true;
         }
     }
 }
