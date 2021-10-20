@@ -17,8 +17,13 @@ namespace Assets.Scripts
             public NoteChannelInfo NoteChannelInfo { get; set; }
         }
 
-        [Range(0.1f, 3f)]
-        public float HitThreshold = 0.1f;
+        public SongPlayer SongPlayer;
+
+        [Range(0.01f, 3f)]
+        public float AboveHitThreshold = 0.1f;
+        [Range(0.01f, 3f)]
+        public float BelowHitThreshold = 0.1f;
+        public float MissCooldownInSeconds = 0.25f;
 
         public KeyCode LeftChannelKey;
         public KeyCode DownChannelKey;
@@ -29,13 +34,19 @@ namespace Assets.Scripts
         public UnityEvent<NoteMissEventArgs> OnNoteMiss;
 
         private bool isDetectionActive;
+        private float missCooldownCounter;
+        private bool isMissCooldownActive;
 
         /// <summary>
         /// Called on Start
         /// </summary>
         public void Start()
         {
+            if (SongPlayer == null) { throw new ArgumentNullException(nameof(SongPlayer)); }
+
             isDetectionActive = false;
+            missCooldownCounter = 0;
+            isMissCooldownActive = false;
         }
 
         /// <summary>
@@ -43,6 +54,7 @@ namespace Assets.Scripts
         /// </summary>
         public void Update()
         {
+            // If the detection is active
             if (isDetectionActive)
             {
                 bool leftHitInputToBeProcessed = Input.GetKeyDown(LeftChannelKey);
@@ -69,7 +81,7 @@ namespace Assets.Scripts
                     if (dot < 0)
                     {
                         // The Note is moving away from the goal
-                        if (dist > HitThreshold)
+                        if (dist > AboveHitThreshold)
                         {
                             // If it is still hittable
                             // We have missed the note 100%!
@@ -98,7 +110,7 @@ namespace Assets.Scripts
                     }
 
                     
-                    if (dist < HitThreshold)
+                    if (dist < BelowHitThreshold)
                     {
                         // We are able to test if we hit it or not
                         if (noteRow.LeftNoteObject != null && leftHitInputToBeProcessed)
@@ -147,6 +159,16 @@ namespace Assets.Scripts
                 else if (rightHitInputToBeProcessed)
                 {
                     InvokeNoteMissEvent(SongPlayer.RightChannelInfo);
+                }
+            }
+
+            // Process the miss cooldown
+            if (isMissCooldownActive)
+            {
+                if ((missCooldownCounter += Time.deltaTime) > MissCooldownInSeconds)
+                {
+                    isMissCooldownActive = false;
+                    missCooldownCounter = 0;
                 }
             }
         }
@@ -199,10 +221,19 @@ namespace Assets.Scripts
 
         private void InvokeNoteMissEvent(NoteChannelInfo attemptedChannel)
         {
+            Debug.Break();
             NoteMissEventArgs args = new NoteMissEventArgs()
             {
                 AttemptedChannel = attemptedChannel,
             };
+
+            if (isMissCooldownActive)
+            {
+                // If we're already cooling down from a miss then don't invoke more
+                return;
+            }
+
+            isMissCooldownActive = true;
 
             OnNoteMiss.Invoke(args);
         }

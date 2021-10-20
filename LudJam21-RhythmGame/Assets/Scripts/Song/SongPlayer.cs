@@ -13,12 +13,12 @@ namespace Assets.Scripts.Song
 {
     public class SongPlayer : MonoBehaviour
     {
-        public static SongMetadata SongMetadata;
-        public static NoteChannelInfo LeftChannelInfo;
-        public static NoteChannelInfo DownChannelInfo;
-        public static NoteChannelInfo UpChannelInfo;
-        public static NoteChannelInfo RightChannelInfo;
-        public static List<NoteRow> NoteRows;
+        public SongMetadata SongMetadata { get; set; }
+        public NoteChannelInfo LeftChannelInfo { get; set; }
+        public NoteChannelInfo DownChannelInfo { get; set; }
+        public NoteChannelInfo UpChannelInfo { get; set; }
+        public NoteChannelInfo RightChannelInfo { get; set; }
+        public List<NoteRow> NoteRows { get; set; }
 
         public string SongFilePath;
         public TestNoteObjectFactory NoteObjectFactory;
