@@ -9,7 +9,7 @@ namespace Assets.Scripts
 {
     public class NoteHitEventArgs
     {
-        public NoteBlockBase HitNote { get; set; }
+        public NoteBlock HitNote { get; set; }
         public NoteChannelInfo AttemptedChannel { get; set; }
     }
 }

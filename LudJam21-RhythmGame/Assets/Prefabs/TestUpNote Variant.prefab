@@ -9,7 +9,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1682980426377992381, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
       propertyPath: m_Name
-      value: TestUpNote
+      value: TestUpNote Variant
       objectReference: {fileID: 0}
     - target: {fileID: 7231692279337265686, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
       propertyPath: m_Color.b
@@ -66,6 +66,18 @@ PrefabInstance:
     - target: {fileID: 7300998453162101830, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783138724586027539, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
+      propertyPath: m_Color.b
+      value: 0.70312417
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783138724586027539, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
+      propertyPath: m_Color.g
+      value: 0.121395506
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783138724586027539, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}
+      propertyPath: m_Color.r
+      value: 0.8301887
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f34b180c18efe1945a76ecf2bad40d46, type: 3}

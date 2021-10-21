@@ -113,7 +113,6 @@ namespace Assets.Scripts
                             }
                         }
                     }
-
                     
                     if (dist < BelowHitThreshold)
                     {
@@ -255,7 +254,7 @@ namespace Assets.Scripts
         /// </summary>
         private void InvokeNoteHitEvent(GameObject noteObject, NoteChannelInfo attemptedChannel)
         {
-            NoteBlockBase blockBase = noteObject.GetComponent<NoteBlockBase>();
+            NoteBlock blockBase = noteObject.GetComponent<NoteBlock>();
             if (blockBase != null)
             {
                 NoteHitEventArgs args = new NoteHitEventArgs()
@@ -284,9 +283,9 @@ namespace Assets.Scripts
         /// <summary>
         /// Gets the last note to pass the 'goal' in the specified channel
         /// </summary>
-        public NoteBlockBase GetLastCompletedNote(NoteChannelInfo channelToCheck, List<GameObject> notesToIgnore, float minNoteDist)
+        public NoteBlock GetLastCompletedNote(NoteChannelInfo channelToCheck, Vector3 goalPosOffset, List<GameObject> notesToIgnore, float minNoteDist)
         {
-            NoteBlockBase closestNote = null;
+            NoteBlock closestNote = null;
             float curSmallestDist = float.MaxValue;
 
             for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
@@ -323,9 +322,9 @@ namespace Assets.Scripts
                     continue;
                 }
 
-                Vector3 distToGoal = channelToCheck.GoalPos - noteToCheck.transform.position;
+                Vector3 distToGoal = (channelToCheck.GoalPos + goalPosOffset) - noteToCheck.transform.position;
                 float dot = Vector3.Dot(distToGoal, channelToCheck.Direction);
-                float dist = Vector3.Distance(channelToCheck.GoalPos, noteToCheck.transform.position);
+                float dist = Vector3.Distance((channelToCheck.GoalPos + goalPosOffset), noteToCheck.transform.position);
 
                 // If the dot product is negative then the Note is past the goal, ie, we care about it!
                 if (dot < 0)
@@ -337,7 +336,7 @@ namespace Assets.Scripts
                             continue;
                         }
                         curSmallestDist = dist;
-                        closestNote = noteToCheck.GetComponent<NoteBlockBase>();
+                        closestNote = noteToCheck.GetComponent<NoteBlock>();
                     }
                 }
             }
@@ -369,10 +368,10 @@ namespace Assets.Scripts
             }
         }
 
-        public void EndCollectNotesToReset(List<NoteBlockBase> notesToIgnore)
+        public void EndCollectNotesToReset(List<NoteBlock> notesToIgnore)
         {
             List<NoteRow> finalNotesBelowGoal = new List<NoteRow>();
-            List<GameObject> noteObjectsToIgnore = new List<GameObject>(notesToIgnore.Select((NoteBlockBase nbb) => nbb.gameObject));
+            List<GameObject> noteObjectsToIgnore = new List<GameObject>(notesToIgnore.Select((NoteBlock nbb) => nbb.gameObject));
 
             // Get all Note Rows below the goal pos
             for (int i = 0; i < SongPlayer.NoteRows.Count; i++)

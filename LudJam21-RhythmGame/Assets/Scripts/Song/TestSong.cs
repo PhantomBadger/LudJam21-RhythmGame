@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 public class TestSong : MonoBehaviour
 {
     public string SongFilePath;
-    public TestNoteObjectFactory NoteObjectFactory;
+    public PrefabNoteObjectFactory NoteObjectFactory;
     public AudioSource SongAudioSource;
 
     [Range(1, 30)]

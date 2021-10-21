@@ -21,8 +21,10 @@ namespace Assets.Scripts.Song
         public List<NoteRow> NoteRows { get; set; }
 
         public string SongFilePath;
-        public TestNoteObjectFactory NoteObjectFactory;
+        public PrefabNoteObjectFactory NoteObjectFactory;
         public AudioSource TargetAudioSource;
+        public GameObject NoteFloor;
+        public Vector3 NoteFloorDir;
 
         [Header("Song Settings")]
         [Range(1, 30)]
@@ -41,6 +43,7 @@ namespace Assets.Scripts.Song
         private bool isPaused = true;
         private bool isRewinding = false;
         private float totalSongDistance;
+        private Vector3 noteFloorStartPos;
 
         public bool IsSongLoaded
         {
@@ -80,6 +83,8 @@ namespace Assets.Scripts.Song
             DownChannelInfo = new NoteChannelInfo(DownChannelTransform, NoteChannel.Down);
             UpChannelInfo = new NoteChannelInfo(UpChannelTransform, NoteChannel.Up);
             RightChannelInfo = new NoteChannelInfo(RightChannelTransform, NoteChannel.Right);
+
+            noteFloorStartPos = NoteFloor.transform.position;
 
             StartCoroutine(InitialiseSong());
         }
@@ -149,6 +154,14 @@ namespace Assets.Scripts.Song
             }
         }
 
+        public float GetNoteDistanceOverTime(float timeDuration)
+        {
+            float percentageOfSong = timeDuration / TargetAudioSource.clip.length;
+            float distance = totalSongDistance * percentageOfSong;
+
+            return distance;
+        }
+
         private void RepositionNoteRows()
         {
             float percentageThroughSong = TargetAudioSource.time / TargetAudioSource.clip.length;
@@ -177,6 +190,8 @@ namespace Assets.Scripts.Song
                     NoteRows[i].RightNoteObject.transform.position = NoteRows[i].RightNoteStartPos + (RightChannelInfo.Direction * distanceOffset);
                 }
             }
+
+            NoteFloor.transform.position = noteFloorStartPos + (NoteFloorDir.normalized * distanceOffset);
         }
 
         /// <summary>
@@ -215,13 +230,18 @@ namespace Assets.Scripts.Song
 
         public void ForwardSong()
         {
-            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch);
+            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch / 2);
+            if (TargetAudioSource.time <= 0.1)
+            {
+                // Restart it if we've rewound to the start
+                TargetAudioSource.Play();
+            }
             isRewinding = false;
         }
 
         public void RewindSong()
         {
-            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch) * -1;
+            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch * 2) * -1;
             isRewinding = true;
         }
     }

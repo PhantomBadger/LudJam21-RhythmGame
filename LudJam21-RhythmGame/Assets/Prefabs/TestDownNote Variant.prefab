@@ -9,7 +9,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4049440508559613654, guid: 04342b1118945294d9142bfa108e7a07, type: 3}
       propertyPath: m_Name
-      value: TestDownNote
+      value: TestDownNote Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 4857948143146155128, guid: 04342b1118945294d9142bfa108e7a07, type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4857948143146155128, guid: 04342b1118945294d9142bfa108e7a07, type: 3}
+      propertyPath: m_Color.g
+      value: 0.5937941
+      objectReference: {fileID: 0}
+    - target: {fileID: 4857948143146155128, guid: 04342b1118945294d9142bfa108e7a07, type: 3}
+      propertyPath: m_Color.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5349148390717426221, guid: 04342b1118945294d9142bfa108e7a07, type: 3}
       propertyPath: m_RootOrder

@@ -1,60 +1,86 @@
 using Assets.Scripts;
 using Assets.Scripts.Song;
+using Assets.Scripts.Song.FileData;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using static Assets.Scripts.NoteMissEventArgs;
 
 public class PlayerController : MonoBehaviour
 {
     private enum PlayerState
     {
-        OnSideStage,
+        OnNoteFloor,
+        OnNoteFloorRewinding,
         Falling,
         OnNote,
+        OnNoteRewinding,
         TransitionToNote,
         TransitionToMiss,
+        PauseBeforePlaying,
     }
 
-    public Transform NotOnNotePosition;
+    private enum PlayerFallingSubState
+    {
+        Falling,
+        FallingToOtherChannel,
+    }
+
+    [Header("General")]
+    public AudioSource TargetAudioSource;
     public NoteHitDetector NoteHitDetector;
+    public SongPlayer SongPlayer;
+    public Animator PlayerAnimator;
+
+    [Header("Transition Settings")]
     public float TransitionTimeInSeconds;
     public float HeightOffsetForMidPoint;
 
+    [Header("FallToOtherChannel Settings")]
+    public AnimationCurve OtherChannelAnimationCurve;
+    public float OtherChannelTransitionTimeInSeconds;
+
+    [Header("Events")]
     public UnityEvent OnFallStarted;
     public UnityEvent OnFallEnded;
 
     // The targets when transitioning to a note
-    private NoteBlockBase targetNoteBlock;
+    private NoteBlock targetNoteBlock;
+    private NoteBlock lastLandedOnNoteBlock;
     private NoteChannelInfo targetChannelInfo;
 
     // Target when transitioning to a miss
     private Vector3 missEndPoint;
     private NoteChannelInfo missChannelInfo;
+    private float audioSourceTimeOnMiss;
+    private TypeOfMissedNote typeOfMiss;
 
     // Target when falling
-    private NoteBlockBase targetFallNote;
+    private NoteBlock targetFallNote;
     private NoteChannelInfo fallChannelInfo;
+    private NoteChannelInfo fallOtherChannelInfo;
+    private float otherChannelTransitionCounter = 0;
+    private bool isFallingToOtherChannel = false;
 
     // Common info for all transitions
     private Vector3 transitionStartPos;
     private float transitionCounter = 0;
     private PlayerState playerState;
 
-
     /// <summary>
     /// Start is called before the first frame update
     /// </summary>
     public void Start()
     {
-        if (NotOnNotePosition == null) { throw new ArgumentNullException(nameof(NotOnNotePosition)); }
         if (NoteHitDetector == null) { throw new ArgumentNullException(nameof(NoteHitDetector)); }
 
-        transform.position = NotOnNotePosition.position;
-        transitionStartPos = transform.position;
         Debug.Log("Transitioning to OnSideStage to Start");
-        playerState = PlayerState.OnSideStage;
+        playerState = PlayerState.OnNoteFloor;
+        targetChannelInfo = SongPlayer.LeftChannelInfo;
+        transform.position = SongPlayer.LeftChannelTransform.position;
+        transitionStartPos = transform.position;
     }
 
     /// <summary>
@@ -64,89 +90,333 @@ public class PlayerController : MonoBehaviour
     {
         switch (playerState)
         {
-            case PlayerState.OnSideStage:
-                transform.position = NotOnNotePosition.position;
-                break;
-            case PlayerState.OnNote:
-                if (targetNoteBlock != null)
+            case PlayerState.OnNoteFloor:
                 {
-                    transform.position = targetNoteBlock.GetLandedPosition();
+                    Vector3 newPos = transform.position;
+                    newPos.y = SongPlayer.NoteFloor.transform.position.y;
+                    transform.position = newPos;
+                    break;
                 }
-                break;
-            case PlayerState.TransitionToNote:
-                if (transitionCounter < TransitionTimeInSeconds)
+            case PlayerState.OnNoteFloorRewinding:
                 {
-                    // Calculate the up-to-date end point and transition to it
-                    Vector3 targetNoteEndPos = targetNoteBlock.GetLandedPosition();
-                    transitionCounter += Time.deltaTime;
-                    Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, targetNoteEndPos, HeightOffsetForMidPoint);
-                    float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
-                    transform.position = ParabolicLerp(transitionStartPos, topMidPos, targetNoteEndPos, normalisedTransitionCounter);
-                }
-                else
-                {
-                    // We have landed!
-                    Debug.Log("Transitioning to OnNote from TransitionToNote");
-                    playerState = PlayerState.OnNote;
-                    targetNoteBlock.OnLanded();
-                }
-                break;
-            case PlayerState.TransitionToMiss:
-                if (transitionCounter < TransitionTimeInSeconds)
-                {
-                    // Use the pre-defined miss endpoint and transition to it
-                    transitionCounter += Time.deltaTime;
-                    Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, missEndPoint, HeightOffsetForMidPoint);
-                    float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
-                    transform.position = ParabolicLerp(transitionStartPos, topMidPos, missEndPoint, normalisedTransitionCounter);
-                }
-                else
-                {
-                    // We are falling!
-                    Debug.Log("Transitioning to Falling from TransitionToMiss");
-                    playerState = PlayerState.Falling;
+                    Vector3 posToGoal = fallChannelInfo.GoalPos - transform.position;
+                    float distToGoal = Vector3.Distance(transform.position, fallChannelInfo.GoalPos);
+                    float rewindDot = Vector3.Dot(posToGoal, fallChannelInfo.Direction);
 
-                    List<GameObject> notesToIgnore = new List<GameObject>();
+                    Vector3 newPos = transform.position;
+                    newPos.y = SongPlayer.NoteFloor.transform.position.y;
+                    transform.position = newPos;
+
+                    if (rewindDot >= 0 || distToGoal < 0.1f)
+                    {
+                        Debug.Log("Transitioning to OnNoteFloor from OnNoteFloorRewinding");
+                        playerState = PlayerState.OnNoteFloor;
+                        List<NoteBlock> notesToIgnore = new List<NoteBlock>();
+                        NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
+                        OnFallEnded?.Invoke();
+                        PlayerAnimator.SetTrigger("EndFallLand");
+                    }
+                    break;
+                }
+            case PlayerState.PauseBeforePlaying:
+                {
+
+                    break;
+                }
+            case PlayerState.OnNote:
+                {
                     if (targetNoteBlock != null)
                     {
-                        notesToIgnore.Add(targetNoteBlock.gameObject);
+                        transform.position = targetNoteBlock.GetLandedPosition();
                     }
-                    targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, notesToIgnore, 0.1f);
-                    fallChannelInfo = missChannelInfo;
-
-                    NoteHitDetector.StartCollectNotesToReset();
-                    OnFallStarted?.Invoke();
+                    break;
                 }
-                break;
+            case PlayerState.TransitionToNote:
+                {
+                    if (transitionCounter < TransitionTimeInSeconds)
+                    {
+                        // Calculate the up-to-date end point and transition to it
+                        Vector3 targetNoteEndPos = targetNoteBlock.GetLandedPosition();
+                        transitionCounter += Time.deltaTime;
+                        Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, targetNoteEndPos, HeightOffsetForMidPoint);
+                        float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
+                        transform.position = ParabolicLerp(transitionStartPos, topMidPos, targetNoteEndPos, normalisedTransitionCounter);
+                    }
+                    else
+                    {
+                        // We have landed!
+                        Debug.Log("Transitioning to OnNote from TransitionToNote");
+                        playerState = PlayerState.OnNote;
+                        lastLandedOnNoteBlock = targetNoteBlock;
+                        PlayerAnimator.SetTrigger("EndFallLand");
+                    }
+                    break;
+                }
+            case PlayerState.TransitionToMiss:
+                {
+                    Vector3 adjustedMissEndPoint = missEndPoint;
+                    if (typeOfMiss == TypeOfMissedNote.IncorrectlyAttemptedNote)
+                    {
+                        float currentAudioSourceTime = TargetAudioSource.time;
+                        float timeDiff = currentAudioSourceTime - audioSourceTimeOnMiss;
+                        float distanceForThatTime = SongPlayer.GetNoteDistanceOverTime(timeDiff);
+
+                        adjustedMissEndPoint = missEndPoint + (missChannelInfo.Direction * distanceForThatTime);
+                    }
+
+                    if (transitionCounter < TransitionTimeInSeconds)
+                    {
+                        // Use the pre-defined miss endpoint and transition to it
+                        transitionCounter += Time.deltaTime;
+                        Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, adjustedMissEndPoint, HeightOffsetForMidPoint);
+                        float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
+                        transform.position = ParabolicLerp(transitionStartPos, topMidPos, adjustedMissEndPoint, normalisedTransitionCounter);
+                    }
+                    else
+                    {
+                        // We are falling!
+                        Debug.Log("Transitioning to Falling from TransitionToMiss");
+                        playerState = PlayerState.Falling;
+
+                        List<GameObject> notesToIgnore = new List<GameObject>();
+                        if (lastLandedOnNoteBlock != null)
+                        {
+                            notesToIgnore.Add(lastLandedOnNoteBlock.gameObject);
+                        }
+                        targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (adjustedMissEndPoint - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
+                        fallChannelInfo = missChannelInfo;
+
+                        NoteHitDetector.StartCollectNotesToReset();
+                        OnFallStarted?.Invoke();
+                        PlayerAnimator.SetTrigger("StartFall");
+                    }
+                    break;
+                }
             case PlayerState.Falling:
-                if (targetFallNote == null)
                 {
-                    transform.position = NotOnNotePosition.position;
-                    Debug.Log("Transitioning to OnSideStage from Falling");
-                    playerState = PlayerState.OnSideStage;
+                    string fallDebugLog = "Falling Enter!";
+                    // If we are also falling to another channel, handle our horizontal movement
+                    if (isFallingToOtherChannel)
+                    {
+                        fallDebugLog += "\n\tFalling to Other Channel!";
+                        if (otherChannelTransitionCounter < OtherChannelTransitionTimeInSeconds)
+                        {
+                            otherChannelTransitionCounter += Time.deltaTime;
+                            fallDebugLog += $"\n\t\tCurrently Transitioning to Other Channel - CurCounter '{otherChannelTransitionCounter}' | Max: '{OtherChannelTransitionTimeInSeconds}'!";
 
-                    NoteHitDetector.EndCollectNotesToReset(new List<NoteBlockBase>());
-                    OnFallEnded?.Invoke();
-                    return;
+                            Vector3 startPos = new Vector3(fallChannelInfo.GoalPos.x, transform.position.y);
+                            Vector3 endPos = new Vector3(fallOtherChannelInfo.GoalPos.x, transform.position.y);
+                            float t = OtherChannelAnimationCurve.Evaluate(otherChannelTransitionCounter / OtherChannelTransitionTimeInSeconds);
+
+                            Vector3 newPos = Vector3.Lerp(startPos, endPos, t);
+                            transform.position = newPos;
+                            fallDebugLog += $"\n\t\tNew Position '{transform.position.ToString()}' Lerped between '{startPos.ToString()}' and '{endPos.ToString()}' with t {t}";
+                        }
+                        else
+                        {
+                            fallDebugLog += $"\n\t\tFinished Transitioning, Snapping to Endpoint";
+                            otherChannelTransitionCounter = 0;
+                            isFallingToOtherChannel = false;
+
+                            Vector3 newPos = transform.position;
+                            newPos.x = fallOtherChannelInfo.GoalPos.x;
+                            transform.position = newPos;
+
+                            fallChannelInfo = fallOtherChannelInfo;
+                            fallOtherChannelInfo = null;
+                        }
+                    }
+
+                    // If there's no target note for us to fall to, we're falling to the floor
+                    if (targetFallNote == null)
+                    {
+                        fallDebugLog += "\n\tFalling to Floor!";
+                        float distToFloor = Vector3.Distance(transform.position, SongPlayer.NoteFloor.transform.position);
+                        Vector3 posToFloor = SongPlayer.NoteFloor.transform.position - transform.position;
+                        float floorDot = Vector3.Dot(posToFloor, fallChannelInfo.Direction);
+
+                        if (floorDot <= 0 || distToFloor < 0.1f)
+                        {
+                            Debug.Log("Transitioning to OnNoteFloorRewinding from Falling");
+                            playerState = PlayerState.OnNoteFloorRewinding;
+
+                            Vector3 newPos = transform.position;
+                            newPos.x = fallChannelInfo.GoalPos.x;
+                            newPos.y = SongPlayer.NoteFloor.transform.position.y;
+                            transform.position = newPos;
+                            targetChannelInfo = fallChannelInfo;
+                            PlayerAnimator.SetTrigger("StartFallLand");
+                        }
+                    }
+                    else
+                    {
+                        fallDebugLog += "\n\tFalling to Target Note!";
+                        // Otherwise we're moving to a specific note. Stay in this state until we're close enough
+                        // or past it
+                        float distToTarget = Vector3.Distance(transform.position, targetFallNote.GetLandedPosition());
+                        Vector3 posToTarget = targetFallNote.GetLandedPosition() - transform.position;
+                        float fallDot = Vector3.Dot(posToTarget, fallChannelInfo.Direction);
+
+                        if (fallDot <= 0 || distToTarget < 0.1f)
+                        {
+                            Debug.Log("Transitioning to OnNote from Falling");
+
+                            switch (targetFallNote.NoteType)
+                            {
+                                // For a normal block, we just snap to it and continue
+                                case NoteType.Normal:
+                                    {
+                                        transform.position = targetFallNote.GetLandedPosition();
+
+                                        // Update the state machine and the note info
+                                        playerState = PlayerState.OnNoteRewinding;
+                                        targetNoteBlock = targetFallNote;
+                                        targetChannelInfo = fallChannelInfo;
+
+                                        // Update the animations
+                                        PlayerAnimator.SetTrigger("StartFallLand");
+                                        break;
+                                    }
+                                case NoteType.FallRight:
+                                    {
+                                        // Move to the channel to the right
+                                        NoteChannelInfo rightChannel = GetRightChannel(fallChannelInfo);
+
+                                        Vector3 newPos = transform.position;
+                                        newPos.x = rightChannel.GoalPos.x;
+                                        transform.position = newPos;
+
+                                        List<GameObject> notesToIgnore = new List<GameObject>();
+                                        targetFallNote = NoteHitDetector.GetLastCompletedNote(rightChannel, (transform.position - rightChannel.GoalPos), notesToIgnore, 0.1f);
+                                        fallOtherChannelInfo = rightChannel;
+
+                                        isFallingToOtherChannel = true;
+                                        otherChannelTransitionCounter = 0;
+                                        break;
+                                    }
+                                case NoteType.FallLeft:
+                                    {
+                                        // Move to the channel to the left
+                                        NoteChannelInfo leftChannel = GetLeftChannel(fallChannelInfo);
+
+                                        Vector3 newPos = transform.position;
+                                        newPos.x = leftChannel.GoalPos.x;
+                                        transform.position = newPos;
+
+                                        List<GameObject> notesToIgnore = new List<GameObject>();
+                                        targetFallNote = NoteHitDetector.GetLastCompletedNote(leftChannel, (transform.position - leftChannel.GoalPos), notesToIgnore, 0.1f);
+                                        fallOtherChannelInfo = leftChannel;
+
+                                        isFallingToOtherChannel = true;
+                                        otherChannelTransitionCounter = 0;
+                                        break;
+                                    }
+                                case NoteType.Fragile:
+                                    {
+                                        // Fall straight through the block
+                                        List<GameObject> notesToIgnore = new List<GameObject>()
+                                        {
+                                            targetFallNote.gameObject
+                                        };
+                                        targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (transform.position - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
+                                        break;
+                                    }
+                                case NoteType.Unknown:
+                                default:
+                                    {
+                                        throw new NotImplementedException($"Unable to identify fall landing behaviour for note type of '{targetFallNote.NoteType}'");
+                                    }
+                            }
+                        }
+                    }
+
+                    Debug.Log(fallDebugLog);
+                    break;
                 }
-
-                float distToTarget = Vector3.Distance(transform.position, targetFallNote.GetLandedPosition());
-                Vector3 posToTarget = targetFallNote.GetLandedPosition() - transform.position;
-                float dot = Vector3.Dot(posToTarget, fallChannelInfo.Direction);
-
-                if (dot <= 0 || distToTarget < 0.1f)
+            case PlayerState.OnNoteRewinding:
                 {
-                    transform.position = targetFallNote.GetLandedPosition();
-                    Debug.Log("Transitioning to OnNote from Falling");
-                    playerState = PlayerState.OnNote;
-                    targetNoteBlock = targetFallNote;
+                    Vector3 posToGoal = fallChannelInfo.GoalPos - transform.position;
+                    float distToGoal = Vector3.Distance(transform.position, fallChannelInfo.GoalPos);
+                    float rewindDot = Vector3.Dot(posToGoal, fallChannelInfo.Direction);
 
-                    NoteHitDetector.EndCollectNotesToReset(new List<NoteBlockBase>() { targetNoteBlock });
-                    OnFallEnded?.Invoke();
+                    transform.position = targetNoteBlock.GetLandedPosition();
+
+                    if (rewindDot >= 0 || distToGoal < 0.1f)
+                    {
+                        Debug.Log("Transitioning to OnNote from OnNoteRewinding");
+                        playerState = PlayerState.OnNote;
+                        lastLandedOnNoteBlock = targetNoteBlock;
+                        List<NoteBlock> notesToIgnore = new List<NoteBlock>();
+                        if (targetNoteBlock != null)
+                        {
+                            notesToIgnore.Add(targetNoteBlock);
+                        }
+                        NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
+                        OnFallEnded?.Invoke();
+                        PlayerAnimator.SetTrigger("EndFallLand");
+                    }
+                    break;
                 }
-                break;
             default:
                 throw new NotImplementedException($"Unsupported Player State of {playerState}");
+        }
+    }
+
+    /// <summary>
+    /// Gets the channel to the left of the one provided
+    /// </summary>
+    private NoteChannelInfo GetLeftChannel(NoteChannelInfo currentChannel)
+    {
+        switch (currentChannel.NoteChannel)
+        {
+            case NoteChannel.Left:
+                {
+                    // Cant go any more left
+                    return currentChannel;
+                }
+            case NoteChannel.Down:
+                {
+                    return SongPlayer.LeftChannelInfo;
+                }
+            case NoteChannel.Up:
+                {
+                    return SongPlayer.DownChannelInfo;
+                }
+            case NoteChannel.Right:
+                {
+                    return SongPlayer.UpChannelInfo;
+                }
+            default:
+                throw new NotImplementedException($"Unable to identify Note Channel of {currentChannel.NoteChannel}");
+        }
+    }
+
+    /// <summary>
+    /// Gets the channel to the right of the one provided
+    /// </summary>
+    private NoteChannelInfo GetRightChannel(NoteChannelInfo currentChannel)
+    {
+        switch (currentChannel.NoteChannel)
+        {
+            case NoteChannel.Left:
+                {
+                    // Cant go any more left
+                    return SongPlayer.DownChannelInfo;
+                }
+            case NoteChannel.Down:
+                {
+                    return SongPlayer.UpChannelInfo;
+                }
+            case NoteChannel.Up:
+                {
+                    return SongPlayer.RightChannelInfo;
+                }
+            case NoteChannel.Right:
+                {
+                    return currentChannel;
+                }
+            default:
+                throw new NotImplementedException($"Unable to identify Note Channel of {currentChannel.NoteChannel}");
         }
     }
 
@@ -213,6 +483,7 @@ public class PlayerController : MonoBehaviour
         transitionStartPos = transform.position;
 
         // Identify the end point
+        typeOfMiss = args.MissType;
         switch (args.MissType)
         {
             case NoteMissEventArgs.TypeOfMissedNote.IncorrectlyAttemptedNote:
@@ -220,7 +491,7 @@ public class PlayerController : MonoBehaviour
                 missChannelInfo = args.AttemptedChannel;
                 break;
             case NoteMissEventArgs.TypeOfMissedNote.NoAttemptedNote:
-                missEndPoint = targetChannelInfo.GoalPos;
+                missEndPoint = new Vector3(targetChannelInfo.GoalPos.x, transform.position.y, transform.position.z);
                 missChannelInfo = targetChannelInfo;
                 break;
             default:
@@ -229,5 +500,6 @@ public class PlayerController : MonoBehaviour
 
         Debug.Log($"Transitioning to TransitionToMiss from {playerState} due to OnNoteMissEvent");
         playerState = PlayerState.TransitionToMiss;
+        audioSourceTimeOnMiss = TargetAudioSource.time;
     }
 }
