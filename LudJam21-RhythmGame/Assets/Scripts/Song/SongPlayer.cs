@@ -27,7 +27,7 @@ namespace Assets.Scripts.Song
         public Vector3 NoteFloorDir;
 
         [Header("Song Settings")]
-        [Range(1, 30)]
+        [Range(1, 300)]
         public float DistanceInSecond = 10;
         public Transform LeftChannelTransform;
         public Transform DownChannelTransform;
@@ -212,10 +212,13 @@ namespace Assets.Scripts.Song
         /// </summary>
         public void UnpauseSong()
         {
-            isPaused = false;
-            TargetAudioSource.UnPause();
-            RepositionNoteRows();
-            OnSongPlay.Invoke();
+            if (isPaused)
+            {
+                isPaused = false;
+                TargetAudioSource.UnPause();
+                RepositionNoteRows();
+                OnSongPlay.Invoke();
+            }
         }
 
         /// <summary>
@@ -223,9 +226,12 @@ namespace Assets.Scripts.Song
         /// </summary>
         public void PauseSong()
         {
-            isPaused = true;
-            TargetAudioSource.Pause();
-            OnSongPaused.Invoke();
+            if (!isPaused)
+            {
+                isPaused = true;
+                TargetAudioSource.Pause();
+                OnSongPaused.Invoke();
+            }
         }
 
         public void ForwardSong()

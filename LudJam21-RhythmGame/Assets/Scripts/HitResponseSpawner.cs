@@ -9,15 +9,16 @@ namespace Assets.Scripts
     {
         public GameObject HitResponsePrefab;
         public GameObject MissResponsePrefab;
+        public Vector3 SpawnOffset;
 
         public void SpawnHitResponse(NoteHitEventArgs args)
         {
-            GameObject.Instantiate(HitResponsePrefab, args.HitNote.transform.position, Quaternion.identity);
+            GameObject.Instantiate(HitResponsePrefab, args.HitNote.transform.position + SpawnOffset, Quaternion.identity);
         }
 
         public void SpawnMissResponse(NoteMissEventArgs args)
         {
-            GameObject.Instantiate(MissResponsePrefab, args.AttemptedChannel.GoalPos, Quaternion.identity);
+            GameObject.Instantiate(MissResponsePrefab, args.AttemptedChannel.GoalPos + SpawnOffset, Quaternion.identity);
         }
     }
 }

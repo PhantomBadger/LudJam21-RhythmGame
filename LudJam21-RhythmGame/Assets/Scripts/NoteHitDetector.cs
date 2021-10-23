@@ -21,10 +21,10 @@ namespace Assets.Scripts
 
         public SongPlayer SongPlayer;
 
-        [Range(0.01f, 3f)]
-        public float AboveHitThreshold = 0.1f;
-        [Range(0.01f, 3f)]
-        public float BelowHitThreshold = 0.1f;
+        [Range(1f, 50f)]
+        public float AboveHitThreshold = 1f;
+        [Range(1f, 50f)]
+        public float BelowHitThreshold = 1f;
         public float MissCooldownInSeconds = 0.25f;
 
         public KeyCode LeftChannelKey;

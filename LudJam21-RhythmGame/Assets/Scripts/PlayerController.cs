@@ -19,7 +19,6 @@ public class PlayerController : MonoBehaviour
         OnNoteRewinding,
         TransitionToNote,
         TransitionToMiss,
-        PauseBeforePlaying,
     }
 
     private enum PlayerFallingSubState
@@ -37,6 +36,10 @@ public class PlayerController : MonoBehaviour
     [Header("Transition Settings")]
     public float TransitionTimeInSeconds;
     public float HeightOffsetForMidPoint;
+    public float PauseBeforeResumeTimeInSeconds;
+
+    [Header("Miss Transition Settings")]
+    public float MissStutterTimeInSeconds;
 
     [Header("FallToOtherChannel Settings")]
     public AnimationCurve OtherChannelAnimationCurve;
@@ -56,6 +59,7 @@ public class PlayerController : MonoBehaviour
     private NoteChannelInfo missChannelInfo;
     private float audioSourceTimeOnMiss;
     private TypeOfMissedNote typeOfMiss;
+    private float missStutterTimeCounter = 0;
 
     // Target when falling
     private NoteBlock targetFallNote;
@@ -63,6 +67,9 @@ public class PlayerController : MonoBehaviour
     private NoteChannelInfo fallOtherChannelInfo;
     private float otherChannelTransitionCounter = 0;
     private bool isFallingToOtherChannel = false;
+
+    // Rewinding
+    private float pauseBeforeResumeCounter = 0;
 
     // Common info for all transitions
     private Vector3 transitionStartPos;
@@ -95,10 +102,12 @@ public class PlayerController : MonoBehaviour
                     Vector3 newPos = transform.position;
                     newPos.y = SongPlayer.NoteFloor.transform.position.y;
                     transform.position = newPos;
+                    PlayerAnimator.SetTrigger("PlayerIdleTrigger");
                     break;
                 }
             case PlayerState.OnNoteFloorRewinding:
                 {
+                    PlayerAnimator.SetTrigger("PlayerLandTrigger");
                     Vector3 posToGoal = fallChannelInfo.GoalPos - transform.position;
                     float distToGoal = Vector3.Distance(transform.position, fallChannelInfo.GoalPos);
                     float rewindDot = Vector3.Dot(posToGoal, fallChannelInfo.Direction);
@@ -109,22 +118,30 @@ public class PlayerController : MonoBehaviour
 
                     if (rewindDot >= 0 || distToGoal < 0.1f)
                     {
-                        Debug.Log("Transitioning to OnNoteFloor from OnNoteFloorRewinding");
-                        playerState = PlayerState.OnNoteFloor;
-                        List<NoteBlock> notesToIgnore = new List<NoteBlock>();
-                        NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
-                        OnFallEnded?.Invoke();
-                        PlayerAnimator.SetTrigger("EndFallLand");
-                    }
-                    break;
-                }
-            case PlayerState.PauseBeforePlaying:
-                {
+                        if (pauseBeforeResumeCounter < PauseBeforeResumeTimeInSeconds)
+                        {
+                            pauseBeforeResumeCounter += Time.deltaTime;
+                            SongPlayer.PauseSong();
+                            SetOnNoteAnimationTrigger();
+                        }
+                        else
+                        {
+                            SongPlayer.UnpauseSong();
 
+                            Debug.Log("Transitioning to OnNoteFloor from OnNoteFloorRewinding");
+                            playerState = PlayerState.OnNoteFloor;
+                            List<NoteBlock> notesToIgnore = new List<NoteBlock>();
+                            NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
+                            OnFallEnded?.Invoke();
+                            SetOnNoteAnimationTrigger();
+                        }
+                    }
                     break;
                 }
             case PlayerState.OnNote:
                 {
+                    SetOnNoteAnimationTrigger();
+
                     if (targetNoteBlock != null)
                     {
                         transform.position = targetNoteBlock.GetLandedPosition();
@@ -140,6 +157,16 @@ public class PlayerController : MonoBehaviour
                         transitionCounter += Time.deltaTime;
                         Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, targetNoteEndPos, HeightOffsetForMidPoint);
                         float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
+
+                        if (normalisedTransitionCounter <= 0.5f)
+                        {
+                            PlayerAnimator.SetTrigger("PlayerUpTrigger");
+                        }
+                        else
+                        {
+                            PlayerAnimator.SetTrigger("PlayerDownTrigger");
+                        }
+
                         transform.position = ParabolicLerp(transitionStartPos, topMidPos, targetNoteEndPos, normalisedTransitionCounter);
                     }
                     else
@@ -148,7 +175,7 @@ public class PlayerController : MonoBehaviour
                         Debug.Log("Transitioning to OnNote from TransitionToNote");
                         playerState = PlayerState.OnNote;
                         lastLandedOnNoteBlock = targetNoteBlock;
-                        PlayerAnimator.SetTrigger("EndFallLand");
+                        SetOnNoteAnimationTrigger();
                     }
                     break;
                 }
@@ -170,30 +197,50 @@ public class PlayerController : MonoBehaviour
                         transitionCounter += Time.deltaTime;
                         Vector3 topMidPos = GetParabolicMidPoint(transitionStartPos, adjustedMissEndPoint, HeightOffsetForMidPoint);
                         float normalisedTransitionCounter = (transitionCounter / TransitionTimeInSeconds);
+
+                        if (normalisedTransitionCounter <= 0.5f)
+                        {
+                            PlayerAnimator.SetTrigger("PlayerUpTrigger");
+                        }
+                        else
+                        {
+                            PlayerAnimator.SetTrigger("PlayerDownTrigger");
+                        }
+
                         transform.position = ParabolicLerp(transitionStartPos, topMidPos, adjustedMissEndPoint, normalisedTransitionCounter);
                     }
                     else
                     {
-                        // We are falling!
-                        Debug.Log("Transitioning to Falling from TransitionToMiss");
-                        playerState = PlayerState.Falling;
-
-                        List<GameObject> notesToIgnore = new List<GameObject>();
-                        if (lastLandedOnNoteBlock != null)
+                        if (missStutterTimeCounter < MissStutterTimeInSeconds)
                         {
-                            notesToIgnore.Add(lastLandedOnNoteBlock.gameObject);
+                            missStutterTimeCounter += Time.deltaTime;
+                            PlayerAnimator.SetTrigger("PlayerFailTrigger");
                         }
-                        targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (adjustedMissEndPoint - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
-                        fallChannelInfo = missChannelInfo;
+                        else
+                        {
+                            // We are falling!
+                            Debug.Log("Transitioning to Falling from TransitionToMiss");
+                            playerState = PlayerState.Falling;
 
-                        NoteHitDetector.StartCollectNotesToReset();
-                        OnFallStarted?.Invoke();
-                        PlayerAnimator.SetTrigger("StartFall");
+                            List<GameObject> notesToIgnore = new List<GameObject>();
+                            if (lastLandedOnNoteBlock != null)
+                            {
+                                notesToIgnore.Add(lastLandedOnNoteBlock.gameObject);
+                            }
+                            targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (adjustedMissEndPoint - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
+                            fallChannelInfo = missChannelInfo;
+
+                            NoteHitDetector.StartCollectNotesToReset();
+                            OnFallStarted?.Invoke();
+                        }
                     }
+
                     break;
                 }
             case PlayerState.Falling:
                 {
+                    PlayerAnimator.SetTrigger("PlayerFallTrigger");
+
                     string fallDebugLog = "Falling Enter!";
                     // If we are also falling to another channel, handle our horizontal movement
                     if (isFallingToOtherChannel)
@@ -204,8 +251,8 @@ public class PlayerController : MonoBehaviour
                             otherChannelTransitionCounter += Time.deltaTime;
                             fallDebugLog += $"\n\t\tCurrently Transitioning to Other Channel - CurCounter '{otherChannelTransitionCounter}' | Max: '{OtherChannelTransitionTimeInSeconds}'!";
 
-                            Vector3 startPos = new Vector3(fallChannelInfo.GoalPos.x, transform.position.y);
-                            Vector3 endPos = new Vector3(fallOtherChannelInfo.GoalPos.x, transform.position.y);
+                            Vector3 startPos = new Vector3(fallChannelInfo.GoalPos.x, transform.position.y, transform.position.z);
+                            Vector3 endPos = new Vector3(fallOtherChannelInfo.GoalPos.x, transform.position.y, transform.position.z);
                             float t = OtherChannelAnimationCurve.Evaluate(otherChannelTransitionCounter / OtherChannelTransitionTimeInSeconds);
 
                             Vector3 newPos = Vector3.Lerp(startPos, endPos, t);
@@ -245,6 +292,7 @@ public class PlayerController : MonoBehaviour
                             newPos.y = SongPlayer.NoteFloor.transform.position.y;
                             transform.position = newPos;
                             targetChannelInfo = fallChannelInfo;
+                            pauseBeforeResumeCounter = 0;
                             PlayerAnimator.SetTrigger("StartFallLand");
                         }
                     }
@@ -272,9 +320,9 @@ public class PlayerController : MonoBehaviour
                                         playerState = PlayerState.OnNoteRewinding;
                                         targetNoteBlock = targetFallNote;
                                         targetChannelInfo = fallChannelInfo;
+                                        pauseBeforeResumeCounter = 0;
 
-                                        // Update the animations
-                                        PlayerAnimator.SetTrigger("StartFallLand");
+                                        SetOnNoteAnimationTrigger();
                                         break;
                                     }
                                 case NoteType.FallRight:
@@ -282,9 +330,9 @@ public class PlayerController : MonoBehaviour
                                         // Move to the channel to the right
                                         NoteChannelInfo rightChannel = GetRightChannel(fallChannelInfo);
 
-                                        Vector3 newPos = transform.position;
-                                        newPos.x = rightChannel.GoalPos.x;
-                                        transform.position = newPos;
+                                        //Vector3 newPos = transform.position;
+                                        //newPos.x = rightChannel.GoalPos.x;
+                                        //transform.position = newPos;
 
                                         List<GameObject> notesToIgnore = new List<GameObject>();
                                         targetFallNote = NoteHitDetector.GetLastCompletedNote(rightChannel, (transform.position - rightChannel.GoalPos), notesToIgnore, 0.1f);
@@ -299,9 +347,9 @@ public class PlayerController : MonoBehaviour
                                         // Move to the channel to the left
                                         NoteChannelInfo leftChannel = GetLeftChannel(fallChannelInfo);
 
-                                        Vector3 newPos = transform.position;
-                                        newPos.x = leftChannel.GoalPos.x;
-                                        transform.position = newPos;
+                                        //Vector3 newPos = transform.position;
+                                        //newPos.x = leftChannel.GoalPos.x;
+                                        //transform.position = newPos;
 
                                         List<GameObject> notesToIgnore = new List<GameObject>();
                                         targetFallNote = NoteHitDetector.GetLastCompletedNote(leftChannel, (transform.position - leftChannel.GoalPos), notesToIgnore, 0.1f);
@@ -335,6 +383,8 @@ public class PlayerController : MonoBehaviour
                 }
             case PlayerState.OnNoteRewinding:
                 {
+                    PlayerAnimator.SetTrigger("PlayerLandTrigger");
+
                     Vector3 posToGoal = fallChannelInfo.GoalPos - transform.position;
                     float distToGoal = Vector3.Distance(transform.position, fallChannelInfo.GoalPos);
                     float rewindDot = Vector3.Dot(posToGoal, fallChannelInfo.Direction);
@@ -343,18 +393,31 @@ public class PlayerController : MonoBehaviour
 
                     if (rewindDot >= 0 || distToGoal < 0.1f)
                     {
-                        Debug.Log("Transitioning to OnNote from OnNoteRewinding");
-                        playerState = PlayerState.OnNote;
-                        lastLandedOnNoteBlock = targetNoteBlock;
-                        List<NoteBlock> notesToIgnore = new List<NoteBlock>();
-                        if (targetNoteBlock != null)
+                        if (pauseBeforeResumeCounter < PauseBeforeResumeTimeInSeconds)
                         {
-                            notesToIgnore.Add(targetNoteBlock);
+                            pauseBeforeResumeCounter += Time.deltaTime;
+                            SongPlayer.PauseSong();
+                            SetOnNoteAnimationTrigger();
                         }
-                        NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
-                        OnFallEnded?.Invoke();
-                        PlayerAnimator.SetTrigger("EndFallLand");
+                        else
+                        {
+                            SongPlayer.UnpauseSong();
+
+                            Debug.Log("Transitioning to OnNote from OnNoteRewinding");
+                            playerState = PlayerState.OnNote;
+                            lastLandedOnNoteBlock = targetNoteBlock;
+                            List<NoteBlock> notesToIgnore = new List<NoteBlock>();
+                            if (targetNoteBlock != null)
+                            {
+                                notesToIgnore.Add(targetNoteBlock);
+                            }
+                            NoteHitDetector.EndCollectNotesToReset(notesToIgnore);
+                            OnFallEnded?.Invoke();
+
+                            SetOnNoteAnimationTrigger();
+                        }
                     }
+
                     break;
                 }
             default:
@@ -388,6 +451,33 @@ public class PlayerController : MonoBehaviour
                 }
             default:
                 throw new NotImplementedException($"Unable to identify Note Channel of {currentChannel.NoteChannel}");
+        }
+    }
+
+    private void SetOnNoteAnimationTrigger()
+    {
+        if (targetNoteBlock != null)
+        {
+            if (targetNoteBlock.NoteType == NoteType.FallLeft)
+            {
+                PlayerAnimator.SetTrigger("PlayerIdleLeftTrigger");
+            }
+            else if (targetNoteBlock.NoteType == NoteType.FallRight)
+            {
+                PlayerAnimator.SetTrigger("PlayerIdleRightTrigger");
+            }
+            else if (targetNoteBlock.NoteType == NoteType.Fragile)
+            {
+                PlayerAnimator.SetTrigger("PlayerIdleFragileTrigger");
+            }
+            else
+            {
+                PlayerAnimator.SetTrigger("PlayerIdleTrigger");
+            }
+        }
+        else
+        {
+            PlayerAnimator.SetTrigger("PlayerIdleTrigger");
         }
     }
 
@@ -448,6 +538,12 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        if (playerState == PlayerState.Falling || playerState == PlayerState.TransitionToMiss)
+        {
+            // We're currently falling, can't hit anything!
+            return;
+        }
+
         // Initialise any transition
         transitionCounter = 0;
         transitionStartPos = transform.position;
@@ -481,6 +577,7 @@ public class PlayerController : MonoBehaviour
         transitionCounter = 0;
         targetNoteBlock = null;
         transitionStartPos = transform.position;
+        missStutterTimeCounter = 0;
 
         // Identify the end point
         typeOfMiss = args.MissType;

@@ -9,6 +9,7 @@ public class CameraTilt : MonoBehaviour
     public float TiltOffset = 0.5f;
     public float TiltTimeInSeconds = 3f;
     private Vector3 startPos;
+    private Vector3 tiltPos;
     private float upTiltTimeCounter = 0;
     private float downTiltTimeCounter = float.MaxValue;
     private bool tiltEnabled = false;
@@ -16,6 +17,7 @@ public class CameraTilt : MonoBehaviour
     public void Start()
     {
         startPos = transform.position;
+        tiltPos = startPos - new Vector3(0, TiltOffset);
     }
 
     public void Update()
@@ -26,11 +28,11 @@ public class CameraTilt : MonoBehaviour
             {
                 upTiltTimeCounter += Time.deltaTime;
                 float t = StartTiltCurve.Evaluate(upTiltTimeCounter / TiltTimeInSeconds);
-                transform.position = Vector3.Lerp(transform.position, startPos - new Vector3(0, TiltOffset), t);
+                transform.position = Vector3.Lerp(startPos, tiltPos, t);
             }
             else
             {
-                transform.position = startPos - new Vector3(0, TiltOffset);
+                transform.position = tiltPos;
             }
         }
         else
@@ -38,8 +40,8 @@ public class CameraTilt : MonoBehaviour
             if (downTiltTimeCounter < TiltTimeInSeconds)
             {
                 downTiltTimeCounter += Time.deltaTime;
-                float t = EndTiltCurve.Evaluate(upTiltTimeCounter / TiltTimeInSeconds);
-                transform.position = Vector3.Lerp(transform.position, startPos, t);
+                float t = EndTiltCurve.Evaluate(downTiltTimeCounter / TiltTimeInSeconds);
+                transform.position = Vector3.Lerp(tiltPos, startPos, t);
             }
             else
             {
