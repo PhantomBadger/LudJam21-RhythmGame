@@ -1,8 +1,8 @@
-#TITLE:1/2 Song;
+#TITLE:;
 #SUBTITLE:;
 #ARTIST:;
 #CREDIT:;
-#MUSIC:D:\Documents\Git\LudJam21-RhythmGame\LudJam21-RhythmGame\Assets\Resources\1_2.wav;
+#MUSIC:1_2.wav;
 #SELECTABLE:YES;
 #BACKGROUND:;
 #BANNER:;
@@ -10,18 +10,23 @@
 #OFFSET:-1.663;
 #SAMPLESTART:0.000;
 #SAMPLELENGTH:0.000;
-#BPMS:150;
+#BPMS:0=150;
 #STOPS:;
 //---------------dance-single - ----------------
 #NOTES:
+     dance-single:
+     :
+     Medium:
+     1:
+     0.000,0.000,0.000,0.000,0.000:
 1000
-0200
-0020
+0100
+0010
 0001
 ,
-4000
-0300
-0020
+1000
+0100
+0010
 0001
 ,
 0011

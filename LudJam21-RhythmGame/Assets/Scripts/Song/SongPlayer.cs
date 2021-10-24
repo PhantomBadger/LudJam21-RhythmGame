@@ -113,11 +113,22 @@ namespace Assets.Scripts.Song
         private IEnumerator LoadAudioClip(SongMetadata songMetadata)
         {
             // Load the Song
-            string uri = $"file://{songMetadata.MusicFilePath}";
+            string musicFilePath = songMetadata.MusicFilePath;
+            if (!Path.IsPathRooted(musicFilePath))
+            {
+                FileInfo songFileInfo = new FileInfo(SongFilePath);
+                musicFilePath = Path.Combine(Path.GetDirectoryName(songFileInfo.FullName), musicFilePath);
+            }
+            string uri = $"file://{musicFilePath}";
             UnityWebRequest webRequest = UnityWebRequestMultimedia.GetAudioClip(uri, AudioType.WAV);
             while (!webRequest.isDone)
             {
                 yield return webRequest.SendWebRequest();
+            }
+
+            if (webRequest.result != UnityWebRequest.Result.Success)
+            {
+                throw new InvalidOperationException($"Web Request for '{uri}' Failed with error: '{webRequest.error}'");
             }
 
             AudioClip audioClip = DownloadHandlerAudioClip.GetContent(webRequest);

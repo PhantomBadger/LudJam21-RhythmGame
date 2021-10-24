@@ -62,6 +62,17 @@ namespace Assets.Scripts.Song
                 }
                 else
                 { 
+                    // Skip lines with colons in, they're Stepmania info we don't care about
+                    if (line.Contains(":"))
+                    {
+                        continue;
+                    }
+
+                    if (line.Contains(";"))
+                    {
+                        break;
+                    }
+
                     if (line.StartsWith(","))
                     {
                         songMetadata.Bars.Add(currentBar);
@@ -78,6 +89,8 @@ namespace Assets.Scripts.Song
                     }
                 }
             }
+
+            songMetadata.Bars.Add(currentBar);
 
             Debug.Log($"Song Parse complete! Identified '{songMetadata.Bars.Count}' Note Bars total!");
             return songMetadata;
@@ -198,6 +211,11 @@ namespace Assets.Scripts.Song
                 case "bpms":
                 case "bpm":
                     {
+                        if (value.Contains('='))
+                        {
+                            value = value.Substring(value.LastIndexOf('=') + 1);
+                        }
+
                         if (float.TryParse(value, out float floatValue))
                         {
                             Debug.Log($"Identifying BPM as '{floatValue}'");
