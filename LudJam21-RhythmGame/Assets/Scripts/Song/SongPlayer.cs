@@ -144,9 +144,9 @@ namespace Assets.Scripts.Song
         }
 
         /// <summary>
-        /// Update is called once per frame
+        /// FixedUpdate is called each physics tick
         /// </summary>
-        public void Update()
+        public void FixedUpdate()
         {
             if (isSongLoaded && !isPaused)
             {

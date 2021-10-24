@@ -55,9 +55,9 @@ namespace Assets.Scripts
         }
 
         /// <summary>
-        /// Called each Frame
+        /// FixedUpdate is called each physics tick
         /// </summary>
-        public void Update()
+        public void FixedUpdate()
         {
             // If the detection is active
             if (isDetectionActive)
@@ -86,7 +86,7 @@ namespace Assets.Scripts
                     if (dot < 0)
                     {
                         // The Note is moving away from the goal
-                        if (dist > AboveHitThreshold)
+                        if (dist > BelowHitThreshold)
                         {
                             // If it is still hittable
                             // We have missed the note 100%!
@@ -114,7 +114,7 @@ namespace Assets.Scripts
                         }
                     }
                     
-                    if (dist < BelowHitThreshold)
+                    if (dist < AboveHitThreshold)
                     {
                         // We are able to test if we hit it or not
                         if (noteRow.LeftNoteObject != null && leftHitInputToBeProcessed)

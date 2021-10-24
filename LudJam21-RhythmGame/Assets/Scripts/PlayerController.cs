@@ -327,7 +327,6 @@ public class PlayerController : MonoBehaviour
                             transform.position = newPos;
                             targetChannelInfo = fallChannelInfo;
                             pauseBeforeResumeCounter = 0;
-                            PlayerAnimator.SetTrigger("StartFallLand");
                         }
                     }
                     else

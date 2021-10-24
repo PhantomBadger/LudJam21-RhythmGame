@@ -147,13 +147,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 37698783}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: -33, z: -3.5}
+  m_LocalScale: {x: 85, y: 1, z: 1}
   m_Children:
   - {fileID: 51845725}
   - {fileID: 919751276}
-  m_Father: {fileID: 1546972500}
-  m_RootOrder: 0
+  m_Father: {fileID: 1399101116}
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &51845724
 GameObject:
@@ -179,7 +179,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 51845724}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 8, z: 0}
+  m_LocalPosition: {x: 0, y: 17, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 37698784}
@@ -317,7 +317,7 @@ MonoBehaviour:
   TargetAudioSource: {fileID: 226707249}
   NoteFloor: {fileID: 1546972498}
   NoteFloorDir: {x: 0, y: -1, z: 0}
-  DistanceInSecond: 150
+  DistanceInSecond: 130
   LeftChannelTransform: {fileID: 1911690854}
   DownChannelTransform: {fileID: 857964445}
   UpChannelTransform: {fileID: 1624984917}
@@ -760,7 +760,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.5, y: -20, z: -10}
+  m_LocalPosition: {x: -0.5, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 2045370002}
@@ -1233,7 +1233,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919751275}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -8, z: 0}
+  m_LocalPosition: {x: 0, y: -24, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 37698784}
@@ -1384,6 +1384,7 @@ Transform:
   - {fileID: 799943464}
   - {fileID: 1936120534}
   - {fileID: 1540410854}
+  - {fileID: 37698784}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1400,13 +1401,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SongPlayer: {fileID: 226707250}
-  AboveHitThreshold: 10
-  BelowHitThreshold: 8
+  AboveHitThreshold: 17
+  BelowHitThreshold: 20
   MissCooldownInSeconds: 0.2
-  LeftChannelKey: 49
-  DownChannelKey: 50
-  UpChannelKey: 51
-  RightChannelKey: 52
+  LeftChannelKey: 115
+  DownChannelKey: 100
+  UpChannelKey: 106
+  RightChannelKey: 107
   OnNoteHit:
     m_PersistentCalls:
       m_Calls:
@@ -1636,8 +1637,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -33, z: -2}
   m_LocalScale: {x: 85, y: 1, z: 1}
-  m_Children:
-  - {fileID: 37698784}
+  m_Children: []
   m_Father: {fileID: 2113809914}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
