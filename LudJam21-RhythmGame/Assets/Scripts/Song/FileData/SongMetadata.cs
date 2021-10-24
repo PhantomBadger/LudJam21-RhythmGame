@@ -13,11 +13,11 @@ namespace Assets.Scripts.Song.FileData
         public float Offset { get; set; }
         public float BPM { get; set; }
         public string MusicFilePath { get; set; }
-        public List<NoteRowInfo> Notes { get; set; }
+        public List<NoteBarInfo> Bars { get; set; }
 
         public SongMetadata()
         {
-            Notes = new List<NoteRowInfo>();
+            Bars = new List<NoteBarInfo>();
             BPM = 1;
         }
     }

@@ -167,10 +167,27 @@ public class PlayerController : MonoBehaviour
                             PlayerAnimator.SetTrigger("PlayerDownTrigger");
                         }
 
+                        if (targetNoteEndPos.x >= transitionStartPos.x)
+                        {
+                            Vector3 scale = transform.localScale;
+                            scale.x = Math.Abs(transform.localScale.x);
+                            transform.localScale = scale;
+                        }
+                        else
+                        {
+                            Vector3 scale = transform.localScale;
+                            scale.x = Math.Abs(transform.localScale.x) * -1;
+                            transform.localScale = scale;
+                        }
+
                         transform.position = ParabolicLerp(transitionStartPos, topMidPos, targetNoteEndPos, normalisedTransitionCounter);
                     }
                     else
                     {
+                        Vector3 scale = transform.localScale;
+                        scale.x = Math.Abs(transform.localScale.x);
+                        transform.localScale = scale;
+
                         // We have landed!
                         Debug.Log("Transitioning to OnNote from TransitionToNote");
                         playerState = PlayerState.OnNote;
@@ -207,6 +224,19 @@ public class PlayerController : MonoBehaviour
                             PlayerAnimator.SetTrigger("PlayerDownTrigger");
                         }
 
+                        if (adjustedMissEndPoint.x >= transitionStartPos.x)
+                        {
+                            Vector3 scale = transform.localScale;
+                            scale.x = Math.Abs(transform.localScale.x);
+                            transform.localScale = scale;
+                        }
+                        else
+                        {
+                            Vector3 scale = transform.localScale;
+                            scale.x = Math.Abs(transform.localScale.x) * -1;
+                            transform.localScale = scale;
+                        }
+
                         transform.position = ParabolicLerp(transitionStartPos, topMidPos, adjustedMissEndPoint, normalisedTransitionCounter);
                     }
                     else
@@ -221,6 +251,10 @@ public class PlayerController : MonoBehaviour
                             // We are falling!
                             Debug.Log("Transitioning to Falling from TransitionToMiss");
                             playerState = PlayerState.Falling;
+
+                            Vector3 scale = transform.localScale;
+                            scale.x = Math.Abs(transform.localScale.x);
+                            transform.localScale = scale;
 
                             List<GameObject> notesToIgnore = new List<GameObject>();
                             if (lastLandedOnNoteBlock != null)

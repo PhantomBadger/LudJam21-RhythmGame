@@ -39,6 +39,9 @@ namespace Assets.Scripts.Song
             bool isInNotes = false;
             int rowIndex = 0;
             SongMetadata songMetadata = new SongMetadata();
+
+            NoteBarInfo currentBar = new NoteBarInfo();
+
             for (int i = 0; i < fileContents.Count; i++)
             {
                 string line = fileContents[i].Trim();
@@ -59,17 +62,24 @@ namespace Assets.Scripts.Song
                 }
                 else
                 { 
+                    if (line.StartsWith(","))
+                    {
+                        songMetadata.Bars.Add(currentBar);
+                        currentBar = new NoteBarInfo();
+                        continue;
+                    }
+
                     // Parse the Note information
                     NoteRowInfo noteRow = ParseNoteRow(line, rowIndex++);
 
                     if (noteRow != null)
                     {
-                        songMetadata.Notes.Add(noteRow);
+                        currentBar.NoteRows.Add(noteRow);
                     }
                 }
             }
 
-            Debug.Log($"Song Parse complete! Identified '{songMetadata.Notes.Count}' Note Rows total!");
+            Debug.Log($"Song Parse complete! Identified '{songMetadata.Bars.Count}' Note Bars total!");
             return songMetadata;
         }
 
@@ -78,6 +88,7 @@ namespace Assets.Scripts.Song
         /// </summary>
         private NoteRowInfo ParseNoteRow(string line, int rowIndex)
         {
+
             // Skip any commas used to break up bars in the song file, or skip any lines with not enough notes
             if (line.StartsWith(",") || line.Length < 4)
             {

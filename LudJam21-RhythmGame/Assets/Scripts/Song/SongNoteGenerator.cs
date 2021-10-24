@@ -64,41 +64,48 @@ namespace Assets.Scripts.Song
 
             // Iterate over each note row and generate the GameObject
             List<NoteRow> noteRows = new List<NoteRow>();
-            float distancePerRow = fallDistancePerSecond / (bpm / 60f);
-            for (int i = 0; i < songMetaData.Notes.Count; i++)
+            float distancePerBeat = fallDistancePerSecond / (bpm / 60f);
+            for (int i = 0; i < songMetaData.Bars.Count; i++)
             {
-                NoteRowInfo noteRowInfo = songMetaData.Notes[i];
-                NoteRow noteRow = new NoteRow()
+                NoteBarInfo noteBarInfo = songMetaData.Bars[i];
+                float distancePerBar = (distancePerBeat * 4);
+                float distancePerNoteInBar = distancePerBar / noteBarInfo.NoteRows.Count;
+
+                for (int j = 0; j < noteBarInfo.NoteRows.Count; j++)
                 {
-                    NoteRowInfo = noteRowInfo
-                };
+                    NoteRowInfo noteRowInfo = noteBarInfo.NoteRows[j];
+                    NoteRow noteRow = new NoteRow()
+                    {
+                        NoteRowInfo = noteRowInfo
+                    };
 
-                // Get the appropriate GameObject for each note
-                Vector3 leftNotePosition = leftChannelInfo.GoalPos + ((-leftChannelInfo.Direction) * distanceCounter);
-                noteRow.LeftNoteObject = noteFactory.GetNote(leftNotePosition, noteRowInfo.LeftNoteInfo);
-                noteRow.LeftNoteStartPos = leftNotePosition;
-                noteRow.LeftNoteHasBeenHitProcessed = false;
+                    // Get the appropriate GameObject for each note
+                    Vector3 leftNotePosition = leftChannelInfo.GoalPos + ((-leftChannelInfo.Direction) * distanceCounter);
+                    noteRow.LeftNoteObject = noteFactory.GetNote(leftNotePosition, noteRowInfo.LeftNoteInfo);
+                    noteRow.LeftNoteStartPos = leftNotePosition;
+                    noteRow.LeftNoteHasBeenHitProcessed = false;
 
-                Vector3 downNotePosition = downChannelInfo.GoalPos + ((-downChannelInfo.Direction) * distanceCounter);
-                noteRow.DownNoteObject = noteFactory.GetNote(downNotePosition, noteRowInfo.DownNoteInfo);
-                noteRow.DownNoteStartPos = downNotePosition;
-                noteRow.DownNoteHasBeenHitProcessed = false;
+                    Vector3 downNotePosition = downChannelInfo.GoalPos + ((-downChannelInfo.Direction) * distanceCounter);
+                    noteRow.DownNoteObject = noteFactory.GetNote(downNotePosition, noteRowInfo.DownNoteInfo);
+                    noteRow.DownNoteStartPos = downNotePosition;
+                    noteRow.DownNoteHasBeenHitProcessed = false;
 
-                Vector3 upNotePosition = upChannelInfo.GoalPos + ((-upChannelInfo.Direction) * distanceCounter);
-                noteRow.UpNoteObject = noteFactory.GetNote(upNotePosition, noteRowInfo.UpNoteInfo);
-                noteRow.UpNoteStartPos = upNotePosition;
-                noteRow.UpNoteHasBeenHitProcessed = false;
+                    Vector3 upNotePosition = upChannelInfo.GoalPos + ((-upChannelInfo.Direction) * distanceCounter);
+                    noteRow.UpNoteObject = noteFactory.GetNote(upNotePosition, noteRowInfo.UpNoteInfo);
+                    noteRow.UpNoteStartPos = upNotePosition;
+                    noteRow.UpNoteHasBeenHitProcessed = false;
 
-                Vector3 rightNotePosition = rightChannelInfo.GoalPos + ((-rightChannelInfo.Direction) * distanceCounter);
-                noteRow.RightNoteObject = noteFactory.GetNote(rightNotePosition, noteRowInfo.RightNoteInfo);
-                noteRow.RightNoteStartPos = rightNotePosition;
-                noteRow.RightNoteHasBeenHitProcessed = false;
+                    Vector3 rightNotePosition = rightChannelInfo.GoalPos + ((-rightChannelInfo.Direction) * distanceCounter);
+                    noteRow.RightNoteObject = noteFactory.GetNote(rightNotePosition, noteRowInfo.RightNoteInfo);
+                    noteRow.RightNoteStartPos = rightNotePosition;
+                    noteRow.RightNoteHasBeenHitProcessed = false;
 
-                // Add it to our row list
-                noteRows.Add(noteRow);
+                    // Add it to our row list
+                    noteRows.Add(noteRow);
 
-                // Increment the counter for the next row
-                distanceCounter += distancePerRow;
+                    // Increment the counter for the next row
+                    distanceCounter += distancePerNoteInBar;
+                }
             }
             return noteRows;
         }
