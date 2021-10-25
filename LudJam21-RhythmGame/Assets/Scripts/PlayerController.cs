@@ -48,10 +48,12 @@ public class PlayerController : MonoBehaviour
     [Header("Events")]
     public UnityEvent OnFallStarted;
     public UnityEvent OnFallEnded;
+    public UnityEvent<NoteHitEventArgs> OnConfirmedHit;
+    public UnityEvent<NoteMissEventArgs> OnConfirmedMiss;
 
     // The targets when transitioning to a note
     private NoteBlock targetNoteBlock;
-    private NoteBlock lastLandedOnNoteBlock;
+    private NoteBlock lastSuccessfulNoteBlock;
     private NoteChannelInfo targetChannelInfo;
 
     // Target when transitioning to a miss
@@ -126,7 +128,7 @@ public class PlayerController : MonoBehaviour
                         }
                         else
                         {
-                            SongPlayer.UnpauseSong();
+                            SongPlayer.RewindGracePeriodThenUnpause();
 
                             Debug.Log("Transitioning to OnNoteFloor from OnNoteFloorRewinding");
                             playerState = PlayerState.OnNoteFloor;
@@ -191,22 +193,18 @@ public class PlayerController : MonoBehaviour
                         // We have landed!
                         Debug.Log("Transitioning to OnNote from TransitionToNote");
                         playerState = PlayerState.OnNote;
-                        lastLandedOnNoteBlock = targetNoteBlock;
+                        lastSuccessfulNoteBlock = targetNoteBlock;
                         SetOnNoteAnimationTrigger();
                     }
                     break;
                 }
             case PlayerState.TransitionToMiss:
                 {
-                    Vector3 adjustedMissEndPoint = missEndPoint;
-                    if (typeOfMiss == TypeOfMissedNote.IncorrectlyAttemptedNote)
-                    {
-                        float currentAudioSourceTime = TargetAudioSource.time;
-                        float timeDiff = currentAudioSourceTime - audioSourceTimeOnMiss;
-                        float distanceForThatTime = SongPlayer.GetNoteDistanceOverTime(timeDiff);
+                    float currentAudioSourceTime = TargetAudioSource.time;
+                    float timeDiff = currentAudioSourceTime - audioSourceTimeOnMiss;
+                    float distanceForThatTime = SongPlayer.GetNoteDistanceOverTime(timeDiff);
 
-                        adjustedMissEndPoint = missEndPoint + (missChannelInfo.Direction * distanceForThatTime);
-                    }
+                    Vector3 adjustedMissEndPoint = missEndPoint + (missChannelInfo.Direction * distanceForThatTime);
 
                     if (transitionCounter < TransitionTimeInSeconds)
                     {
@@ -257,11 +255,11 @@ public class PlayerController : MonoBehaviour
                             transform.localScale = scale;
 
                             List<GameObject> notesToIgnore = new List<GameObject>();
-                            if (lastLandedOnNoteBlock != null)
+                            if (lastSuccessfulNoteBlock != null)
                             {
-                                notesToIgnore.Add(lastLandedOnNoteBlock.gameObject);
+                                notesToIgnore.Add(lastSuccessfulNoteBlock.gameObject);
                             }
-                            targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (adjustedMissEndPoint - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
+                            targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (adjustedMissEndPoint - missChannelInfo.GoalPos), notesToIgnore, 10f);
                             fallChannelInfo = missChannelInfo;
 
                             NoteHitDetector.StartCollectNotesToReset();
@@ -426,7 +424,8 @@ public class PlayerController : MonoBehaviour
 
                     if (rewindDot >= 0 || distToGoal < 0.1f)
                     {
-                        if (pauseBeforeResumeCounter < PauseBeforeResumeTimeInSeconds)
+                        if (PauseBeforeResumeTimeInSeconds > float.Epsilon && 
+                            pauseBeforeResumeCounter < PauseBeforeResumeTimeInSeconds)
                         {
                             pauseBeforeResumeCounter += Time.deltaTime;
                             SongPlayer.PauseSong();
@@ -434,11 +433,11 @@ public class PlayerController : MonoBehaviour
                         }
                         else
                         {
-                            SongPlayer.UnpauseSong();
+                            SongPlayer.RewindGracePeriodThenUnpause(new List<GameObject>() { targetNoteBlock.gameObject });
 
                             Debug.Log("Transitioning to OnNote from OnNoteRewinding");
                             playerState = PlayerState.OnNote;
-                            lastLandedOnNoteBlock = targetNoteBlock;
+                            lastSuccessfulNoteBlock = targetNoteBlock;
                             List<NoteBlock> notesToIgnore = new List<NoteBlock>();
                             if (targetNoteBlock != null)
                             {
@@ -587,6 +586,9 @@ public class PlayerController : MonoBehaviour
 
         Debug.Log($"Transitioning to TransitionToNote from {playerState} due to OnNoteHitEvent");
         playerState = PlayerState.TransitionToNote;
+        lastSuccessfulNoteBlock = targetNoteBlock;
+
+        OnConfirmedHit?.Invoke(args);
     }
 
     /// <summary>
@@ -631,5 +633,7 @@ public class PlayerController : MonoBehaviour
         Debug.Log($"Transitioning to TransitionToMiss from {playerState} due to OnNoteMissEvent");
         playerState = PlayerState.TransitionToMiss;
         audioSourceTimeOnMiss = TargetAudioSource.time;
+
+        OnConfirmedMiss?.Invoke(args);
     }
 }

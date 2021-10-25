@@ -13,12 +13,6 @@ namespace Assets.Scripts
 {
     public class NoteHitDetector : MonoBehaviour
     {
-        private class CandidateNoteHitTest
-        {
-            public GameObject NoteObject { get; set; }
-            public NoteChannelInfo NoteChannelInfo { get; set; }
-        }
-
         public SongPlayer SongPlayer;
 
         [Range(1f, 50f)]
@@ -72,7 +66,7 @@ namespace Assets.Scripts
                 {
                     NoteRow noteRow = SongPlayer.NoteRows[i];
 
-                    CandidateNoteHitTest testNoteHitTest = GetNoteTestInfo(noteRow);
+                    CandidateNoteHitTest testNoteHitTest = SongPlayer.GetNoteTestInfo(noteRow);
                     if (testNoteHitTest == null || testNoteHitTest.NoteObject == null)
                     {
                         // No valid notes
@@ -175,55 +169,6 @@ namespace Assets.Scripts
                     missCooldownCounter = 0;
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets info about the note to perform the distance check on from the given row
-        /// </summary>
-        private CandidateNoteHitTest GetNoteTestInfo(NoteRow noteRow)
-        {
-            if (noteRow == null)
-            {
-                return null;
-            }
-
-            if (noteRow.LeftNoteObject != null)
-            {
-                return new CandidateNoteHitTest()
-                {
-                    NoteObject = noteRow.LeftNoteObject,
-                    NoteChannelInfo = SongPlayer.LeftChannelInfo,
-                };
-            }
-
-            if (noteRow.DownNoteObject != null)
-            {
-                return new CandidateNoteHitTest()
-                {
-                    NoteObject = noteRow.DownNoteObject,
-                    NoteChannelInfo = SongPlayer.DownChannelInfo,
-                };
-            }
-
-            if (noteRow.UpNoteObject != null)
-            {
-                return new CandidateNoteHitTest()
-                {
-                    NoteObject = noteRow.UpNoteObject,
-                    NoteChannelInfo = SongPlayer.UpChannelInfo,
-                };
-            }
-
-            if (noteRow.RightNoteObject != null)
-            {
-                return new CandidateNoteHitTest()
-                {
-                    NoteObject = noteRow.RightNoteObject,
-                    NoteChannelInfo = SongPlayer.RightChannelInfo,
-                };
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -352,7 +297,7 @@ namespace Assets.Scripts
             for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
             {
                 NoteRow noteRow = SongPlayer.NoteRows[i];
-                CandidateNoteHitTest noteHit = GetNoteTestInfo(noteRow);
+                CandidateNoteHitTest noteHit = SongPlayer.GetNoteTestInfo(noteRow);
                 if (noteHit == null || noteHit.NoteChannelInfo == null || noteHit.NoteObject == null)
                 {
                     continue;
@@ -377,7 +322,7 @@ namespace Assets.Scripts
             for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
             {
                 NoteRow noteRow = SongPlayer.NoteRows[i];
-                CandidateNoteHitTest noteHit = GetNoteTestInfo(noteRow);
+                CandidateNoteHitTest noteHit = SongPlayer.GetNoteTestInfo(noteRow);
                 if (noteHit == null || noteHit.NoteChannelInfo == null || noteHit.NoteObject == null)
                 {
                     continue;

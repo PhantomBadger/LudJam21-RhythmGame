@@ -20,6 +20,7 @@ namespace Assets.Scripts.Song
         public NoteChannelInfo RightChannelInfo { get; set; }
         public List<NoteRow> NoteRows { get; set; }
 
+        public float StartTimeOffsetInSeconds = 0;
         public string SongFilePath;
         public PrefabNoteObjectFactory NoteObjectFactory;
         public AudioSource TargetAudioSource;
@@ -29,21 +30,34 @@ namespace Assets.Scripts.Song
         [Header("Song Settings")]
         [Range(1, 300)]
         public float DistanceInSecond = 10;
+        public float ForwardPitch = 1f;
+        public float RewindPitch = -2f;
+        public float ForwardVolume = 0.6f;
+        public float RewindVolume = 0.3f;
         public Transform LeftChannelTransform;
         public Transform DownChannelTransform;
         public Transform UpChannelTransform;
         public Transform RightChannelTransform;
 
+        [Header("Rewind Grace Period")]
+        public float RewindGracePeriodInSeconds = 1.5f;
+
         [Header("Song Events")]
         public UnityEvent OnSongLoaded;
         public UnityEvent OnSongPaused;
         public UnityEvent OnSongPlay;
+        public UnityEvent OnRewind;
 
         private bool isSongLoaded = false;
         private bool isPaused = true;
         private bool isRewinding = false;
         private float totalSongDistance;
         private Vector3 noteFloorStartPos;
+        private bool isInRewindGracePeriod;
+        private bool isInGracePeriodSetup;
+        private float rewindGracePeriodCounter;
+        private float gracePeriodDistance;
+        private List<NoteRow> gracePeriodNotes;
 
         public bool IsSongLoaded
         {
@@ -103,6 +117,7 @@ namespace Assets.Scripts.Song
             NoteRows = GenerateSongNotes(SongMetadata);
 
             totalSongDistance = TargetAudioSource.clip.length * DistanceInSecond;
+            gracePeriodNotes = new List<NoteRow>();
 
             OnSongLoaded.Invoke();
         }
@@ -159,9 +174,64 @@ namespace Assets.Scripts.Song
         /// </summary>
         public void FixedUpdate()
         {
-            if (isSongLoaded && !isPaused)
+            if (isSongLoaded)
             {
-                RepositionNoteRows();
+                // If we're currently in the grace period after the rewind we will handle specific note 
+                // positions manually
+                if (isInRewindGracePeriod)
+                {
+                    // If we are in the set up phase we're still moving some of the notes backwards
+                    if (isInGracePeriodSetup)
+                    {
+                        if (rewindGracePeriodCounter < RewindGracePeriodInSeconds)
+                        {
+                            // Continue moving backwards
+                            rewindGracePeriodCounter += (Time.deltaTime * Math.Abs(RewindPitch));
+                            rewindGracePeriodCounter = Math.Min(rewindGracePeriodCounter, RewindGracePeriodInSeconds);
+
+                            float gracePeriodDistanceOffset = GetNoteDistanceOverTime(rewindGracePeriodCounter);
+                            float currentDistance = GetNoteDistanceOverTime(TargetAudioSource.time);
+
+                            for (int i = 0; i < gracePeriodNotes.Count; i++)
+                            {
+                                RepositionNoteRow(gracePeriodNotes[i], currentDistance - gracePeriodDistanceOffset);
+                            }
+                        }
+                        else
+                        {
+                            isInGracePeriodSetup = false;
+                            rewindGracePeriodCounter = RewindGracePeriodInSeconds;
+                        }
+                    }
+                    // We then move them back towards the player and start the song again once they align
+                    else
+                    {
+                        // Move forwards
+                        if (rewindGracePeriodCounter > 0)
+                        {
+                            rewindGracePeriodCounter -= (Time.deltaTime * Math.Abs(ForwardPitch));
+                            rewindGracePeriodCounter = Math.Max(rewindGracePeriodCounter, 0);
+
+                            float gracePeriodDistanceOffset = GetNoteDistanceOverTime(rewindGracePeriodCounter);
+                            float currentDistance = GetNoteDistanceOverTime(TargetAudioSource.time);
+
+                            for (int i = 0; i < gracePeriodNotes.Count; i++)
+                            {
+                                RepositionNoteRow(gracePeriodNotes[i], currentDistance - gracePeriodDistanceOffset);
+                            }
+                        }
+                        else
+                        {
+                            isInRewindGracePeriod = false;
+                            UnpauseSong();
+                            ForwardSong();
+                        }
+                    }
+                }
+                else if (!isPaused)
+                {
+                    RepositionAllNoteRowsToSong();
+                }
             }
         }
 
@@ -173,7 +243,7 @@ namespace Assets.Scripts.Song
             return distance;
         }
 
-        private void RepositionNoteRows()
+        private void RepositionAllNoteRowsToSong()
         {
             float percentageThroughSong = TargetAudioSource.time / TargetAudioSource.clip.length;
             float distanceOffset = totalSongDistance * percentageThroughSong;
@@ -181,28 +251,33 @@ namespace Assets.Scripts.Song
             // Move each note towards the goal
             for (int i = 0; i < NoteRows.Count; i++)
             {
-                if (NoteRows[i].LeftNoteObject != null)
-                {
-                    NoteRows[i].LeftNoteObject.transform.position = NoteRows[i].LeftNoteStartPos + (LeftChannelInfo.Direction * distanceOffset);
-                }
-
-                if (NoteRows[i].DownNoteObject != null)
-                {
-                    NoteRows[i].DownNoteObject.transform.position = NoteRows[i].DownNoteStartPos + (DownChannelInfo.Direction * distanceOffset);
-                }
-
-                if (NoteRows[i].UpNoteObject != null)
-                {
-                    NoteRows[i].UpNoteObject.transform.position = NoteRows[i].UpNoteStartPos + (UpChannelInfo.Direction * distanceOffset);
-                }
-
-                if (NoteRows[i].RightNoteObject != null)
-                {
-                    NoteRows[i].RightNoteObject.transform.position = NoteRows[i].RightNoteStartPos + (RightChannelInfo.Direction * distanceOffset);
-                }
+                RepositionNoteRow(NoteRows[i], distanceOffset);
             }
 
             NoteFloor.transform.position = noteFloorStartPos + (NoteFloorDir.normalized * distanceOffset);
+        }
+
+        private void RepositionNoteRow(NoteRow noteRow, float distanceOffset)
+        {
+            if (noteRow.LeftNoteObject != null)
+            {
+                noteRow.LeftNoteObject.transform.position = noteRow.LeftNoteStartPos + (LeftChannelInfo.Direction * distanceOffset);
+            }
+
+            if (noteRow.DownNoteObject != null)
+            {
+                noteRow.DownNoteObject.transform.position = noteRow.DownNoteStartPos + (DownChannelInfo.Direction * distanceOffset);
+            }
+
+            if (noteRow.UpNoteObject != null)
+            {
+                noteRow.UpNoteObject.transform.position = noteRow.UpNoteStartPos + (UpChannelInfo.Direction * distanceOffset);
+            }
+
+            if (noteRow.RightNoteObject != null)
+            {
+                noteRow.RightNoteObject.transform.position = noteRow.RightNoteStartPos + (RightChannelInfo.Direction * distanceOffset);
+            }
         }
 
         /// <summary>
@@ -213,9 +288,45 @@ namespace Assets.Scripts.Song
             isPaused = false;
             isRewinding = false;
             TargetAudioSource.Play();
-            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch);
-            RepositionNoteRows();
+            TargetAudioSource.time = StartTimeOffsetInSeconds;
+            TargetAudioSource.pitch = ForwardPitch;
+            TargetAudioSource.volume = ForwardVolume;
+            RepositionAllNoteRowsToSong();
             OnSongPlay.Invoke();
+        }
+
+        public void RewindGracePeriodThenUnpause(List<GameObject> objectsToExcludeInGracePeriod = null)
+        {
+            if (objectsToExcludeInGracePeriod == null)
+            {
+                objectsToExcludeInGracePeriod = new List<GameObject>();
+            }
+            PauseSong();
+            isInRewindGracePeriod = true;
+            isInGracePeriodSetup = true;
+            rewindGracePeriodCounter = 0;
+            TargetAudioSource.pitch = 0;
+
+            gracePeriodDistance = GetNoteDistanceOverTime(RewindGracePeriodInSeconds);
+
+            gracePeriodNotes = new List<NoteRow>();
+            for (int i = 0; i < NoteRows.Count; i++)
+            {
+                NoteRow noteRow = NoteRows[i];
+                CandidateNoteHitTest noteHit = GetNoteTestInfo(noteRow);
+                if (noteHit != null && noteHit.NoteObject != null && noteHit.NoteChannelInfo != null)
+                {
+                    if (objectsToExcludeInGracePeriod.Contains(noteHit.NoteObject))
+                    {
+                        continue;
+                    }
+
+                    if (noteHit.NoteObject.transform.position.y > noteHit.NoteChannelInfo.GoalPos.y)
+                    {
+                        gracePeriodNotes.Add(noteRow);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -227,8 +338,8 @@ namespace Assets.Scripts.Song
             {
                 isPaused = false;
                 TargetAudioSource.UnPause();
-                RepositionNoteRows();
-                OnSongPlay.Invoke();
+                RepositionAllNoteRowsToSong();
+                OnSongPlay?.Invoke();
             }
         }
 
@@ -241,13 +352,14 @@ namespace Assets.Scripts.Song
             {
                 isPaused = true;
                 TargetAudioSource.Pause();
-                OnSongPaused.Invoke();
+                OnSongPaused?.Invoke();
             }
         }
 
         public void ForwardSong()
         {
-            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch / 2);
+            TargetAudioSource.pitch = ForwardPitch;
+            TargetAudioSource.volume = ForwardVolume;
             if (TargetAudioSource.time <= 0.1)
             {
                 // Restart it if we've rewound to the start
@@ -258,8 +370,60 @@ namespace Assets.Scripts.Song
 
         public void RewindSong()
         {
-            TargetAudioSource.pitch = Math.Abs(TargetAudioSource.pitch * 2) * -1;
+            TargetAudioSource.pitch = RewindPitch;
+            TargetAudioSource.volume = RewindVolume;
             isRewinding = true;
+            OnRewind?.Invoke();
         }
+
+        /// <summary>
+        /// Gets info about the note to perform the distance check on from the given row
+        /// </summary>
+        public CandidateNoteHitTest GetNoteTestInfo(NoteRow noteRow)
+        {
+            if (noteRow == null)
+            {
+                return null;
+            }
+
+            if (noteRow.LeftNoteObject != null)
+            {
+                return new CandidateNoteHitTest()
+                {
+                    NoteObject = noteRow.LeftNoteObject,
+                    NoteChannelInfo = LeftChannelInfo,
+                };
+            }
+
+            if (noteRow.DownNoteObject != null)
+            {
+                return new CandidateNoteHitTest()
+                {
+                    NoteObject = noteRow.DownNoteObject,
+                    NoteChannelInfo = DownChannelInfo,
+                };
+            }
+
+            if (noteRow.UpNoteObject != null)
+            {
+                return new CandidateNoteHitTest()
+                {
+                    NoteObject = noteRow.UpNoteObject,
+                    NoteChannelInfo = UpChannelInfo,
+                };
+            }
+
+            if (noteRow.RightNoteObject != null)
+            {
+                return new CandidateNoteHitTest()
+                {
+                    NoteObject = noteRow.RightNoteObject,
+                    NoteChannelInfo = RightChannelInfo,
+                };
+            }
+
+            return null;
+        }
+
     }
 }

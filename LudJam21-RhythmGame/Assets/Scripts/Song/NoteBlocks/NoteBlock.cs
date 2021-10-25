@@ -16,20 +16,4 @@ public class NoteBlock : MonoBehaviour
     {
         return LandingPosition.position;
     }
-
-    /// <summary>
-    /// Start is called before the first frame update
-    /// </summary>
-    public virtual void Start()
-    {
-        
-    }
-
-    /// <summary>
-    /// Update is called once per frame
-    /// </summary>
-    public virtual void Update()
-    {
-        
-    }
 }
