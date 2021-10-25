@@ -30,6 +30,8 @@ public class BackgroundSongScroll : MonoBehaviour
     private List<GameObject> layer2Objects;
     private Vector3 layer2StartPos;
     private Vector3 layer2Offset;
+    private bool isPostGame = false;
+    private float postGameCounter;
 
     // Start is called before the first frame update
     public void Start()
@@ -57,7 +59,16 @@ public class BackgroundSongScroll : MonoBehaviour
     {
         if (SongPlayer.IsSongLoaded)
         {
-            float distanceOffset = SongPlayer.GetNoteDistanceOverTime(TargetAudioSource.time);
+            float distanceOffset = 0;
+            if (isPostGame)
+            {
+                postGameCounter += Time.deltaTime;
+                distanceOffset = SongPlayer.GetNoteDistanceOverTime(TargetAudioSource.time + postGameCounter);
+            }
+            else
+            {
+                distanceOffset = SongPlayer.GetNoteDistanceOverTime(TargetAudioSource.time);
+            }
 
             Vector3 newLayer1Pos = layer1StartPos + (Layer1ScrollDir * (distanceOffset * Layer1ScrollScale));
             newLayer1Pos.y = Mathf.Repeat(newLayer1Pos.y - MinYValue, MaxYValue - MinYValue) + MinYValue;
@@ -70,6 +81,15 @@ public class BackgroundSongScroll : MonoBehaviour
             layer2Objects[0].transform.position = newlayer2Pos - layer2Offset;
             layer2Objects[1].transform.position = newlayer2Pos;
             layer2Objects[2].transform.position = newlayer2Pos + layer2Offset;
+        }
+    }
+
+    public void SetPostGameState(bool isPostGame)
+    {
+        if (this.isPostGame != isPostGame)
+        {
+            this.isPostGame = isPostGame;
+            postGameCounter = 0;
         }
     }
 }
