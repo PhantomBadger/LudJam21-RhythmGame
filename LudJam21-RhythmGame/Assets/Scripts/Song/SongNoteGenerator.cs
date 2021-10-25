@@ -76,7 +76,8 @@ namespace Assets.Scripts.Song
                     NoteRowInfo noteRowInfo = noteBarInfo.NoteRows[j];
                     NoteRow noteRow = new NoteRow()
                     {
-                        NoteRowInfo = noteRowInfo
+                        NoteRowInfo = noteRowInfo,
+                        TimeInSong = distanceCounter / fallDistancePerSecond,
                     };
 
                     // Get the appropriate GameObject for each note

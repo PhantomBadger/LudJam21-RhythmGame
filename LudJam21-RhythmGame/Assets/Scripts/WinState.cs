@@ -142,7 +142,7 @@ public class WinState : MonoBehaviour
         if (SongPlayer.IsSongLoaded)
         {
             float percentage = TargetAudioSource.time / TargetAudioSource.clip.length;
-            if (percentage >= PercentageToWin)
+            if (percentage >= PercentageToWin && TargetAudioSource.isPlaying)
             {
                 playerWinStartPos = PlayerObject.transform.position;
                 return true;

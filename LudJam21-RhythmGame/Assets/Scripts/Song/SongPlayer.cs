@@ -20,8 +20,7 @@ namespace Assets.Scripts.Song
         public NoteChannelInfo RightChannelInfo { get; set; }
         public List<NoteRow> NoteRows { get; set; }
 
-        public float StartTimeOffsetInSeconds = 0;
-        public string SongFilePath;
+        public string SongResourceName;
         public PrefabNoteObjectFactory NoteObjectFactory;
         public AudioSource TargetAudioSource;
         public GameObject NoteFloor;
@@ -80,11 +79,6 @@ namespace Assets.Scripts.Song
         /// </summary>
         public void Start()
         {
-            if (!File.Exists(SongFilePath))
-            {
-                throw new InvalidDataException($"Provided Song File {SongFilePath} doesn't exist!");
-            }
-
             if (NoteObjectFactory == null) { throw new ArgumentNullException(nameof(NoteObjectFactory)); }
             if (TargetAudioSource == null) { throw new ArgumentNullException(nameof(TargetAudioSource)); }
 
@@ -109,44 +103,34 @@ namespace Assets.Scripts.Song
         /// </summary>
         private IEnumerator InitialiseSong()
         {
+            yield return null;
+
             // Parse the song and load it into the target
             SongParser songParser = new SongParser();
-            SongMetadata = songParser.ParseSongFile(SongFilePath);
-            yield return StartCoroutine(LoadAudioClip(SongMetadata));
+            SongMetadata = songParser.ParseSongFile(SongResourceName);
+            LoadAudioClip(SongMetadata);
 
             NoteRows = GenerateSongNotes(SongMetadata);
 
             totalSongDistance = TargetAudioSource.clip.length * DistanceInSecond;
             gracePeriodNotes = new List<NoteRow>();
 
-            OnSongLoaded.Invoke();
+            OnSongLoaded?.Invoke();
         }
 
         /// <summary>
         /// Loads the song specified in <see cref="SongMetadata.MusicFilePath"/>
         /// </summary>
-        private IEnumerator LoadAudioClip(SongMetadata songMetadata)
+        private void LoadAudioClip(SongMetadata songMetadata)
         {
             // Load the Song
             string musicFilePath = songMetadata.MusicFilePath;
-            if (!Path.IsPathRooted(musicFilePath))
-            {
-                FileInfo songFileInfo = new FileInfo(SongFilePath);
-                musicFilePath = Path.Combine(Path.GetDirectoryName(songFileInfo.FullName), musicFilePath);
-            }
-            string uri = $"file://{musicFilePath}";
-            UnityWebRequest webRequest = UnityWebRequestMultimedia.GetAudioClip(uri, AudioType.WAV);
-            while (!webRequest.isDone)
-            {
-                yield return webRequest.SendWebRequest();
-            }
 
-            if (webRequest.result != UnityWebRequest.Result.Success)
+            AudioClip audioClip = Resources.Load<AudioClip>(Path.GetFileNameWithoutExtension(musicFilePath));
+            if (audioClip == null)
             {
-                throw new InvalidOperationException($"Web Request for '{uri}' Failed with error: '{webRequest.error}'");
+                throw new InvalidDataException($"Unable to find Song!");
             }
-
-            AudioClip audioClip = DownloadHandlerAudioClip.GetContent(webRequest);
             TargetAudioSource.clip = audioClip;
             TargetAudioSource.Pause();
 
@@ -288,11 +272,10 @@ namespace Assets.Scripts.Song
             isPaused = false;
             isRewinding = false;
             TargetAudioSource.Play();
-            TargetAudioSource.time = StartTimeOffsetInSeconds;
             TargetAudioSource.pitch = ForwardPitch;
             TargetAudioSource.volume = ForwardVolume;
             RepositionAllNoteRowsToSong();
-            OnSongPlay.Invoke();
+            OnSongPlay?.Invoke();
         }
 
         public void RewindGracePeriodThenUnpause(List<GameObject> objectsToExcludeInGracePeriod = null)

@@ -14,12 +14,12 @@ namespace Assets.Scripts.Song
     /// </summary>
     public class SongParser
     {
-        public SongMetadata ParseSongFile(string filePath)
+        public SongMetadata ParseSongFile(string resourceName)
         {
             // Exit early if the file path is bad
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(resourceName)/* || !File.Exists(resourceName)*/)
             {
-                Debug.LogError($"Unable to parse Song File from '{filePath}', File doesn't exist!");
+                Debug.LogError($"Unable to parse Song File from '{resourceName}', File doesn't exist!");
                 return null;
             }
 
@@ -27,11 +27,13 @@ namespace Assets.Scripts.Song
             List<string> fileContents = new List<string>();
             try
             {
-                fileContents.AddRange(File.ReadAllLines(filePath));
+                TextAsset ta = Resources.Load<TextAsset>(resourceName);
+                fileContents.AddRange(ta.text.Split('\n'));
+                //fileContents.AddRange(File.ReadAllLines(resourceName));
             }
             catch (Exception e)
             {
-                Debug.LogError($"Encountered exception during Parsing of File '{filePath}': {e.ToString()}");
+                Debug.LogError($"Encountered exception during Parsing of File '{resourceName}': {e.ToString()}");
                 return null;
             }
 
@@ -44,7 +46,7 @@ namespace Assets.Scripts.Song
 
             for (int i = 0; i < fileContents.Count; i++)
             {
-                string line = fileContents[i].Trim();
+                string line = fileContents[i].Trim(new char[] { '\r', '\n' }).Trim();
 
                 // Skip Comments
                 if (line.StartsWith("//") || string.IsNullOrWhiteSpace(line))

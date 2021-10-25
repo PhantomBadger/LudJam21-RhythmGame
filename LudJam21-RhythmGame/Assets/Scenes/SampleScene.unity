@@ -312,8 +312,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef8bea86962e53c4da5a336fe6c9cfcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StartTimeOffsetInSeconds: 0
-  SongFilePath: Assets/Resources/1_2.sm
+  SongResourceName: 1_2
   NoteObjectFactory: {fileID: 226707251}
   TargetAudioSource: {fileID: 226707249}
   NoteFloor: {fileID: 1546972498}
@@ -361,18 +360,6 @@ MonoBehaviour:
   OnSongPlay:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1399101117}
-        m_TargetAssemblyTypeName: NoteHitDetector, Assembly-CSharp
-        m_MethodName: EnableHitDetection
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
       - m_Target: {fileID: 1399101117}
         m_TargetAssemblyTypeName: Assets.Scripts.NoteHitDetector, Assembly-CSharp
         m_MethodName: EnableHitDetection
@@ -509,7 +496,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  OtherChannelTransitionTimeInSeconds: 0.05
+  OtherChannelTransitionTimeInSeconds: 0.005
   OnFallStarted:
     m_PersistentCalls:
       m_Calls:
@@ -582,6 +569,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  FallCounter: 0
 --- !u!4 &363987567
 Transform:
   m_ObjectHideFlags: 0
@@ -1759,6 +1747,7 @@ MonoBehaviour:
   AboveHitThreshold: 20
   BelowHitThreshold: 20
   MissCooldownInSeconds: 0.2
+  NoFail: 0
   LeftChannelKey: 113
   DownChannelKey: 119
   UpChannelKey: 101
@@ -2282,7 +2271,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TargetAudioSource: {fileID: 226707249}
-  PercentageToWin: 0.999
+  PercentageToWin: 0.99
   DisplayFadeTimeInSeconds: 2.5
   PercentageDisplayFirstChar: {fileID: 1746357703}
   PercentageDisplaySecondChar: {fileID: 800885374}
@@ -2301,7 +2290,7 @@ MonoBehaviour:
   PlayerObject: {fileID: 363987565}
   PlayerAnimator: {fileID: 363987568}
   PlayerWinPos: {fileID: 1665869695}
-  PlayerMoveTimeInSeconds: 5
+  PlayerMoveTimeInSeconds: 3
   SongPlayer: {fileID: 226707250}
   NoteHitDetector: {fileID: 1399101117}
   PlayerController: {fileID: 363987566}

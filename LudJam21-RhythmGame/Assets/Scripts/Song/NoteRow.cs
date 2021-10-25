@@ -14,6 +14,7 @@ namespace Assets.Scripts.Song
     public class NoteRow
     {
         public NoteRowInfo NoteRowInfo { get; set; }
+        public float TimeInSong { get; set; }
 
         public GameObject LeftNoteObject { get; set; }
         public Vector3 LeftNoteStartPos { get; set; }

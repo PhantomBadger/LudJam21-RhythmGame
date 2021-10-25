@@ -51,6 +51,9 @@ public class PlayerController : MonoBehaviour
     public UnityEvent<NoteHitEventArgs> OnConfirmedHit;
     public UnityEvent<NoteMissEventArgs> OnConfirmedMiss;
 
+    [HideInInspector]
+    public int FallCounter;
+
     // The targets when transitioning to a note
     private NoteBlock targetNoteBlock;
     private NoteBlock lastSuccessfulNoteBlock;
@@ -90,6 +93,8 @@ public class PlayerController : MonoBehaviour
         targetChannelInfo = SongPlayer.LeftChannelInfo;
         transform.position = SongPlayer.LeftChannelTransform.position;
         transitionStartPos = transform.position;
+
+        FallCounter = 0;
     }
 
     /// <summary>
@@ -249,6 +254,7 @@ public class PlayerController : MonoBehaviour
                             // We are falling!
                             Debug.Log("Transitioning to Falling from TransitionToMiss");
                             playerState = PlayerState.Falling;
+                            FallCounter++;
 
                             Vector3 scale = transform.localScale;
                             scale.x = Math.Abs(transform.localScale.x);
@@ -397,7 +403,7 @@ public class PlayerController : MonoBehaviour
                                         {
                                             targetFallNote.gameObject
                                         };
-                                        targetFallNote = NoteHitDetector.GetLastCompletedNote(missChannelInfo, (transform.position - missChannelInfo.GoalPos), notesToIgnore, 0.1f);
+                                        targetFallNote = NoteHitDetector.GetLastCompletedNote(fallChannelInfo, (transform.position - fallChannelInfo.GoalPos), notesToIgnore, 0.1f);
                                         break;
                                     }
                                 case NoteType.Unknown:

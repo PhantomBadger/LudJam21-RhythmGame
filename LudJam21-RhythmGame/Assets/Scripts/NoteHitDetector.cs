@@ -20,6 +20,7 @@ namespace Assets.Scripts
         [Range(1f, 50f)]
         public float BelowHitThreshold = 1f;
         public float MissCooldownInSeconds = 0.25f;
+        public bool NoFail = false;
 
         public KeyCode LeftChannelKey;
         public KeyCode DownChannelKey;
@@ -65,6 +66,11 @@ namespace Assets.Scripts
                 for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
                 {
                     NoteRow noteRow = SongPlayer.NoteRows[i];
+
+                    if (noteRow.TimeInSong < (SongPlayer.TargetAudioSource.time - 10))
+                    {
+                        continue;
+                    }
 
                     CandidateNoteHitTest testNoteHitTest = SongPlayer.GetNoteTestInfo(noteRow);
                     if (testNoteHitTest == null || testNoteHitTest.NoteObject == null)
@@ -176,6 +182,11 @@ namespace Assets.Scripts
         /// </summary>
         private void InvokeNoteMissEvent(TypeOfMissedNote typeOfMissedNote, NoteChannelInfo attemptedChannel)
         {
+            if (NoFail)
+            {
+                return;
+            }
+
             // Debug.Break();
             NoteMissEventArgs args = new NoteMissEventArgs()
             {
