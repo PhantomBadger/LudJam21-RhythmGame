@@ -315,28 +315,38 @@ namespace Assets.Scripts.Song
         /// <summary>
         /// Resumes playing the song
         /// </summary>
-        public void UnpauseSong()
+        public bool UnpauseSong()
         {
             if (isPaused)
             {
                 isPaused = false;
                 TargetAudioSource.UnPause();
+                if (TargetAudioSource.time <= 0.1)
+                {
+                    // Restart it if we've rewound to the start
+                    TargetAudioSource.Play();
+                    ForwardSong();
+                }
                 RepositionAllNoteRowsToSong();
                 OnSongPlay?.Invoke();
+                return true;
             }
+            return false;
         }
 
         /// <summary>
         /// Pauses the song
         /// </summary>
-        public void PauseSong()
+        public bool PauseSong()
         {
             if (!isPaused)
             {
                 isPaused = true;
                 TargetAudioSource.Pause();
                 OnSongPaused?.Invoke();
+                return true;
             }
+            return false;
         }
 
         public void ForwardSong()

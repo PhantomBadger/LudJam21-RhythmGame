@@ -100,7 +100,7 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// Update is called once per frame
     /// </summary>
-    public void Update()
+    public void FixedUpdate()
     {
         switch (playerState)
         {
@@ -316,7 +316,7 @@ public class PlayerController : MonoBehaviour
                     if (targetFallNote == null)
                     {
                         fallDebugLog += "\n\tFalling to Floor!";
-                        float distToFloor = Vector3.Distance(transform.position, SongPlayer.NoteFloor.transform.position);
+                        float distToFloor = transform.position.y - SongPlayer.NoteFloor.transform.position.y;
                         Vector3 posToFloor = SongPlayer.NoteFloor.transform.position - transform.position;
                         float floorDot = Vector3.Dot(posToFloor, fallChannelInfo.Direction);
 
@@ -415,7 +415,7 @@ public class PlayerController : MonoBehaviour
                         }
                     }
 
-                    Debug.Log(fallDebugLog);
+                    //Debug.Log(fallDebugLog);
                     break;
                 }
             case PlayerState.OnNoteRewinding:
@@ -641,5 +641,15 @@ public class PlayerController : MonoBehaviour
         audioSourceTimeOnMiss = TargetAudioSource.time;
 
         OnConfirmedMiss?.Invoke(args);
+    }
+
+    public bool Pause()
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool Unpause()
+    {
+        throw new NotImplementedException();
     }
 }
