@@ -22,11 +22,6 @@ namespace Assets.Scripts
         public float MissCooldownInSeconds = 0.25f;
         public bool NoFail = false;
 
-        public KeyCode LeftChannelKey;
-        public KeyCode DownChannelKey;
-        public KeyCode UpChannelKey;
-        public KeyCode RightChannelKey;
-
         public UnityEvent<NoteHitEventArgs> OnNoteHit;
         public UnityEvent<NoteMissEventArgs> OnNoteMiss;
 
@@ -57,10 +52,10 @@ namespace Assets.Scripts
             // If the detection is active
             if (isDetectionActive)
             {
-                bool leftHitInputToBeProcessed = Input.GetKeyDown(LeftChannelKey);
-                bool downHitInputToBeProcessed = Input.GetKeyDown(DownChannelKey);
-                bool upHitInputToBeProcessed = Input.GetKeyDown(UpChannelKey);
-                bool rightHitInputToBeProcessed = Input.GetKeyDown(RightChannelKey);
+                bool leftHitInputToBeProcessed = Input.GetKeyDown(Keybindings.LeftKey);
+                bool downHitInputToBeProcessed = Input.GetKeyDown(Keybindings.DownKey);
+                bool upHitInputToBeProcessed = Input.GetKeyDown(Keybindings.UpKey);
+                bool rightHitInputToBeProcessed = Input.GetKeyDown(Keybindings.RightKey);
 
                 // Process each of the possible note rows
                 for (int i = 0; i < SongPlayer.NoteRows.Count; i++)
