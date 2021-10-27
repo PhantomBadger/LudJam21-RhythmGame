@@ -1,6 +1,7 @@
 ﻿using Assets.Scripts.Song.FileData;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -198,7 +199,7 @@ namespace Assets.Scripts.Song
                     }
                 case "offset":
                     {
-                        if (float.TryParse(value, out float floatValue))
+                        if (float.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out float floatValue))
                         {
                             Debug.Log($"Identifying OFFSET as '{floatValue}'");
                             songMetadata.Offset = floatValue;
@@ -218,7 +219,7 @@ namespace Assets.Scripts.Song
                             value = value.Substring(value.LastIndexOf('=') + 1);
                         }
 
-                        if (float.TryParse(value, out float floatValue))
+                        if (float.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out float floatValue))
                         {
                             Debug.Log($"Identifying BPM as '{floatValue}'");
                             songMetadata.BPM = floatValue;
