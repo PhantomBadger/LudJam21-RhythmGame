@@ -77,7 +77,7 @@ public class MainMenuController : MonoBehaviour
         isMenuActive = true;
         isRebinding = false;
         PauseController.SetCanPause(false);
-        ExitRebind();
+        ExitRebind(false);
         activeButton = MenuButtons.Start;
 
         FirstChar.sprite = GetSpriteForKeyCode(Keybindings.LeftKey, AlphaSprites[0]);
@@ -135,7 +135,7 @@ public class MainMenuController : MonoBehaviour
                     }
                     else
                     {
-                        ExitRebind();
+                        ExitRebind(true);
                     }
                 }
             }
@@ -186,7 +186,7 @@ public class MainMenuController : MonoBehaviour
 
     private KeyCode GetPressedKey()
     {
-        for (int i = 0; i <= ValidKeyCodes.Length; i++)
+        for (int i = 0; i < ValidKeyCodes.Length; i++)
         {
             if (Input.GetKeyDown(ValidKeyCodes[i]))
             {
@@ -212,7 +212,7 @@ public class MainMenuController : MonoBehaviour
         FourthChar.gameObject.SetActive(true);
     }
 
-    private void ExitRebind()
+    private void ExitRebind(bool saveBindings)
     {
         isRebinding = false;
 
@@ -223,9 +223,12 @@ public class MainMenuController : MonoBehaviour
         ThirdChar.gameObject.SetActive(false);
         FourthChar.gameObject.SetActive(false);
 
-        Keybindings.LeftKey = firstKeyPressed;
-        Keybindings.DownKey = secondKeyPressed;
-        Keybindings.UpKey = thirdKeyPressed;
-        Keybindings.RightKey = fourthKeyPressed;
+        if (saveBindings)
+        {
+            Keybindings.LeftKey = firstKeyPressed;
+            Keybindings.DownKey = secondKeyPressed;
+            Keybindings.UpKey = thirdKeyPressed;
+            Keybindings.RightKey = fourthKeyPressed;
+        }
     }
 }
